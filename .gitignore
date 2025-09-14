@@ -1,0 +1,4 @@
+# ignore only built binaries
+/templagen
+*.exe
+*.exe~
