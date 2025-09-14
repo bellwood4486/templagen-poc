@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+
+	"github.com/bellwood4486/templagen-poc/internal/gen"
 )
 
 func main() {
@@ -17,5 +20,31 @@ func main() {
 		os.Exit(2)
 	}
 
-	fmt.Printf("templagen called with: in=%s pkg=%s out=%s\n", *in, *pkg, *out)
+	src, err := os.ReadFile(*in)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to read input template: %w", err))
+		os.Exit(1)
+	}
+
+	outDir := filepath.Dir(*out)
+	relPath, err := filepath.Rel(outDir, *in)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to get relative path: %w", err))
+		os.Exit(1)
+	}
+
+	code, err := gen.Emit(gen.Unit{
+		Pkg:           *pkg,
+		SourcePath:    relPath,
+		SourceLiteral: string(src),
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to emit: %w", err))
+		os.Exit(1)
+	}
+
+	if err := os.WriteFile(*out, []byte(code), 0644); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
