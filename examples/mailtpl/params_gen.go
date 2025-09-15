@@ -14,6 +14,15 @@ func Template() *template.Template {
 	return template.Must(template.New("tpl").Option("missingkey=error").Parse(tplSource))
 }
 
-func RenderAny(w io.Writer, data any) error {
-	return Template().Execute(w, data)
+type User struct {
+	Name string
 }
+
+type Params struct {
+	User User
+	Message string
+}
+
+func Render(w io.Writer, p Params) error { return Template().Execute(w, p) }
+
+func RenderAny(w io.Writer, data any) error { return Template().Execute(w, data) }
