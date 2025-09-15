@@ -97,6 +97,19 @@ func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
 	return f
 }
 
+func TestScanTemplate_DeepNestedPath(t *testing.T) {
+	src := `{{ .User.Address.City }}`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user := getTop(t, sch, "User")
+	addr := getChild(t, user, "Address")
+	city := getChild(t, addr, "City")
+	assertKind(t, city, scan.KindString)
+}
+
 func getChild(t *testing.T, f *scan.Field, name string) *scan.Field {
 	t.Helper()
 	if f.Children == nil {
