@@ -8,7 +8,7 @@ import (
 
 func TestScanTemplate_SimpleFieldsAndNested(t *testing.T) {
 	src := `
-{{ .User.Name }}	
+{{ .User.Name }}
 {{ .Message }}
 `
 	sch, err := scan.ScanTemplate(src)
@@ -21,6 +21,29 @@ func TestScanTemplate_SimpleFieldsAndNested(t *testing.T) {
 	name := getChild(t, user, "Name")
 	assertKind(t, name, scan.KindString)
 
+	msg := getTop(t, sch, "Message")
+	assertKind(t, msg, scan.KindString)
+}
+
+func TestScanTemplate_ElseRestoresDot(t *testing.T) {
+	src := `
+{{ with .User }}
+	{{ .Name }}
+{{ else }}
+	{{ .Message }}
+{{ end }}
+`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user := getTop(t, sch, "User")
+	assertKind(t, user, scan.KindStruct)
+	name := getChild(t, user, "Name")
+	assertKind(t, name, scan.KindString)
+
+	// else 側は元のドット（トップレベル）に戻るはず
 	msg := getTop(t, sch, "Message")
 	assertKind(t, msg, scan.KindString)
 }

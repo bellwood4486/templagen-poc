@@ -7,7 +7,7 @@ import (
 	"github.com/bellwood4486/templagen-poc/internal/util"
 )
 
-// Kind は推論されたフィールド種別
+// Kind は推論されたフィールド種別を表します。
 type Kind int
 
 const (
@@ -17,7 +17,7 @@ const (
 	KindMap
 )
 
-// Fileld はスキーマ木のノード
+// Fileld は推論スキーマ木のノードです。
 type Field struct {
 	Name     string
 	Kind     Kind
@@ -25,11 +25,14 @@ type Field struct {
 	Children map[string]*Field // Struct の子
 }
 
-// Schema はトップレベル（Params直下）のフィールド集合
+// Schema はトップレベル（Params直下）のフィールド集合です。
 type Schema struct {
 	Fields map[string]*Field
 }
 
+// ScanTemplate は Go テンプレートを AST 解析して、.(ドット）スコープを追跡して
+// フィールド参照からスキーマ木を推論します。
+// 既定では葉はすべて string として扱い、 range は []struct{}, index は map[string]string を推論します。
 func ScanTemplate(src string) (Schema, error) {
 	trees, err := tplparse.Parse("tpl", src, "", "")
 	if err != nil {
@@ -46,8 +49,10 @@ func ScanTemplate(src string) (Schema, error) {
 	return s, nil
 }
 
+// ctx は現在の .(ドット)を表すパスを保持します。
+// with/range でドットが移動したときはこのパスを延長します。
 type ctx struct {
-	dot []string // 現在の . のパス（with/range で増える）
+	dot []string
 }
 
 func (c ctx) with(prefix []string) ctx {
@@ -56,6 +61,7 @@ func (c ctx) with(prefix []string) ctx {
 	return ctx{dot: append(dup, prefix...)}
 }
 
+// walk はテンプレ AST を DFS します。 with/range/inf での . の取り扱いをテンプレ仕様取りに行います。
 func walk(n tplparse.Node, s *Schema, c ctx) {
 	switch x := n.(type) {
 	case *tplparse.ListNode:
@@ -65,6 +71,12 @@ func walk(n tplparse.Node, s *Schema, c ctx) {
 	case *tplparse.ActionNode:
 		collectFromPipe(x.Pipe, s, c)
 	case *tplparse.IfNode:
+		// if のパイプに出る単独フィールドは存在チェック用途が多いので、
+		// 基点フィールドは struct として確保しておくと後続の .Foo.Bar に親和的。
+		base := baseFieldFromPipe(x.Pipe)
+		if len(base) > 0 {
+			ensureStructPath(s, append(c.dot, base...))
+		}
 		collectFromPipe(x.Pipe, s, c)
 		if x.List != nil {
 			walk(x.List, s, c)
@@ -73,9 +85,10 @@ func walk(n tplparse.Node, s *Schema, c ctx) {
 			walk(x.ElseList, s, c)
 		}
 	case *tplparse.WithNode:
-		base := firstFieldFromPipe(x.Pipe)
+		// with 本体では . が基点に切り替わる。 esle 側は元の . に戻る。
+		base := baseFieldFromPipe(x.Pipe)
 		if len(base) > 0 {
-			ensurePath(s, append(c.dot, base...), true)
+			ensureStructPath(s, append(c.dot, base...))
 		}
 		nc := c
 		if len(base) > 0 {
@@ -88,7 +101,8 @@ func walk(n tplparse.Node, s *Schema, c ctx) {
 			walk(x.ElseList, s, c)
 		}
 	case *tplparse.RangeNode:
-		base := firstFieldFromPipe(x.Pipe)
+		// range .Items → Items は []struct{] に
+		base := baseFieldFromPipe(x.Pipe)
 		if len(base) > 0 {
 			markSliceStruct(s, append(c.dot, base...))
 		}
@@ -105,6 +119,7 @@ func walk(n tplparse.Node, s *Schema, c ctx) {
 	}
 }
 
+// collectFromPipe は {{ .Foo.Bar }} や {{ index .Meta "k" }} など、パイプ内のフィールド参照を収集します。
 func collectFromPipe(p *tplparse.PipeNode, s *Schema, c ctx) {
 	if p == nil {
 		return
@@ -119,6 +134,7 @@ func collectFromPipe(p *tplparse.PipeNode, s *Schema, c ctx) {
 				}
 			}
 		}
+		// 通常のフィールド参照 .Foo.Bar を葉 string として確保
 		for _, a := range cmd.Args {
 			if f, ok := a.(*tplparse.FieldNode); ok {
 				ensurePath(s, append(c.dot, f.Ident...), true)
@@ -127,7 +143,8 @@ func collectFromPipe(p *tplparse.PipeNode, s *Schema, c ctx) {
 	}
 }
 
-func firstFieldFromPipe(p *tplparse.PipeNode) []string {
+// baseFieldFromPipe はパイプ内で最初に現れるフィールドノード（.Foo.Bar など）の識別子スライスを返します。
+func baseFieldFromPipe(p *tplparse.PipeNode) []string {
 	if p == nil {
 		return nil
 	}
@@ -143,28 +160,58 @@ func firstFieldFromPipe(p *tplparse.PipeNode) []string {
 	return nil
 }
 
+// ensureStructPath は与えられたパス（ドット起点）を「必ず struct の連結」として確保します。
+// 途中で既に存在し Kind が string などでも、構造体に昇格させ、Children を確保します。
+func ensureStructPath(s *Schema, parts []string) {
+	if len(parts) == 0 {
+		return
+	}
+	if s.Fields == nil {
+		s.Fields = map[string]*Field{}
+	}
+
+	cur := ensureStruct(s.Fields, parts[0])
+	for i := 1; i < len(parts); i++ {
+		if cur.Children == nil {
+			cur.Children = map[string]*Field{}
+		}
+		cur = ensureStruct(cur.Children, parts[i])
+	}
+}
+
+// ensurePath は（通常の）フィールド参照を処理します。
+// 1セグメントのみなら葉 string、2セグメント以上なら中間を struct で掘り、葉を string で確保します。
+// 既に Slice/Map/Struct(子あり) で確定しているノードは壊さず尊重します。
+// 既存が Struct(子なし) の場合は必要に応じて String ⇔ Struct へ昇格/置換します。
 func ensurePath(s *Schema, parts []string, leafAsString bool) {
 	if len(parts) == 0 {
 		return
 	}
 
-	// 単一セグメントは葉(string)として扱う
+	// 単一セグメントは葉 string として扱う（既存が確定済みなら尊重）
 	if len(parts) == 1 {
 		name := parts[0]
-		// 既に別の形で確定しているなら壊さない
-		if cur, ok := s.Fields[name]; ok && cur != nil {
-			// 子を持つstruct / slice / map は触らない
-			if cur.Kind == KindStruct && len(cur.Children) == 0 {
-				*cur = Field{
-					Name: util.Export(name),
-					Kind: KindString,
-				}
-			}
-			// それ以外（Slice/Map/Struct(子あり)はそのまま
-			return
-		}
 		if s.Fields == nil {
 			s.Fields = map[string]*Field{}
+		}
+		if cur, ok := s.Fields[name]; ok && cur != nil {
+			switch cur.Kind {
+			case KindSlice, KindMap:
+				// 既にコンテナとして確定 → 触らない
+				return
+			case KindStruct:
+				if len(cur.Children) == 0 {
+					// 子なし struct → 文字列に置換
+					*cur = Field{
+						Name: util.Export(name),
+						Kind: KindString,
+					}
+				}
+				return
+			default:
+				// string 等 → そのまま
+				return
+			}
 		}
 		s.Fields[name] = &Field{
 			Name: util.Export(name),
@@ -173,13 +220,14 @@ func ensurePath(s *Schema, parts []string, leafAsString bool) {
 		return
 	}
 
-	// 2要素以上は中間をstructで掘っていく
+	// 2要素以上は中間を struct で掘っていく
 	if s.Fields == nil {
 		s.Fields = map[string]*Field{}
 	}
 	cur := ensureStruct(s.Fields, parts[0])
+
 	for i := 1; i < len(parts); i++ {
-		// slice の場合は要素へ降りる
+		// スライスは要素へ潜る
 		if cur.Kind == KindSlice {
 			if cur.Elem == nil {
 				cur.Elem = &Field{
@@ -196,15 +244,21 @@ func ensurePath(s *Schema, parts []string, leafAsString bool) {
 
 		name := parts[i]
 		if i == len(parts)-1 {
-			// 葉は string として作る（既存が確定していれば尊重）
+			// 葉は string として確保（既存確定は尊重）
 			if ch, ok := cur.Children[name]; ok && ch != nil {
-				if ch.Kind == KindStruct && len(ch.Children) == 0 {
-					*ch = Field{
-						Name: util.Export(name),
-						Kind: KindString,
+				switch ch.Kind {
+				case KindSlice, KindMap:
+					return
+				case KindStruct:
+					if len(ch.Children) == 0 {
+						*ch = Field{
+							Name: util.Export(name),
+							Kind: KindString,
+						}
 					}
+				default:
+					return
 				}
-				return
 			}
 			cur.Children[name] = &Field{
 				Name: util.Export(name),
@@ -216,18 +270,29 @@ func ensurePath(s *Schema, parts []string, leafAsString bool) {
 	}
 }
 
+// ensureStruct は name に対応するノードを必ず struct として返します。
+// 既に存在して Kind が struct 以外でも、struct に「昇格」させ、Children を確保します。
 func ensureStruct(m map[string]*Field, name string) *Field {
-	if m[name] == nil {
-		m[name] = &Field{
-			Name:     util.Export(name),
-			Kind:     KindStruct,
-			Children: map[string]*Field{},
+	if m[name] != nil {
+		if m[name].Kind != KindStruct {
+			m[name].Kind = KindStruct
 		}
+		if m[name].Children == nil {
+			m[name].Children = map[string]*Field{}
+		}
+		return m[name]
+	}
+
+	m[name] = &Field{
+		Name:     util.Export(name),
+		Kind:     KindStruct,
+		Children: map[string]*Field{},
 	}
 
 	return m[name]
 }
 
+// markSliceStruct は parts の最終セグメントをスライス（要素は struct）として確定します。
 func markSliceStruct(s *Schema, parts []string) {
 	if len(parts) == 0 {
 		return
@@ -253,6 +318,7 @@ func markSliceStruct(s *Schema, parts []string) {
 	}
 }
 
+// markMapString は parts の最終セグメントを map[string]string として確定します。
 func markMapString(s *Schema, parts []string) {
 	if len(parts) == 0 {
 		return
