@@ -25,6 +25,19 @@ func TestScanTemplate_SimpleFieldsAndNested(t *testing.T) {
 	assertKind(t, msg, scan.KindString)
 }
 
+func TestScanTemplate_DeepNestedPath(t *testing.T) {
+	src := `{{ .User.Address.City }}`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user := getTop(t, sch, "User")
+	addr := getChild(t, user, "Address")
+	city := getChild(t, addr, "City")
+	assertKind(t, city, scan.KindString)
+}
+
 func TestScanTemplate_WithScope_ElseRestoresDot(t *testing.T) {
 	src := `
 {{ with .User }}
@@ -88,19 +101,6 @@ func TestScanTemplate_Index_MakesMapString(t *testing.T) {
 	assertKind(t, meta.Elem, scan.KindString)
 }
 
-func TestScanTemplate_DeepNestedPath(t *testing.T) {
-	src := `{{ .User.Address.City }}`
-	sch, err := scan.ScanTemplate(src)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	user := getTop(t, sch, "User")
-	addr := getChild(t, user, "Address")
-	city := getChild(t, addr, "City")
-	assertKind(t, city, scan.KindString)
-}
-
 func TestScanTemplate_WithThenRange_NestedUnderPrefix(t *testing.T) {
 	src := `
 {{ with .Section }}
@@ -121,6 +121,22 @@ func TestScanTemplate_WithThenRange_NestedUnderPrefix(t *testing.T) {
 	assertKind(t, items.Elem, scan.KindStruct)
 	title := getChild(t, items.Elem, "Title")
 	assertKind(t, title, scan.KindString)
+}
+
+func TestScanTemplate_IfPipeLine_fieldAndChild(t *testing.T) {
+	src := `
+{{ if .User }}ok{{ end }}
+{{ .User.Name }}
+`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user := getTop(t, sch, "User")
+	assertKind(t, user, scan.KindStruct)
+	name := getChild(t, user, "Name")
+	assertKind(t, name, scan.KindString)
 }
 
 func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
