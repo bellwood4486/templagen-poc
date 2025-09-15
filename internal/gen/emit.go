@@ -57,7 +57,10 @@ func Emit(u Unit) (string, error) {
 
 	// Params(トップレベル直下)
 	fmt.Fprintf(&b, "type Params struct {\n")
-	for name, f := range sch.Fields {
+	// フィールド順序を決定化
+	topKeys := slices.Sorted(maps.Keys(sch.Fields))
+	for _, name := range topKeys {
+		f := sch.Fields[name]
 		fmt.Fprintf(&b, "\t%s %s\n", util.Export(name), goTypeOf(name, f))
 	}
 	fmt.Fprintf(&b, "}\n\n")
@@ -86,12 +89,18 @@ func emitTypes(b *strings.Builder, s scan.Schema) {
 			}
 			if typeName != "Params" && len(f.Children) > 0 {
 				fmt.Fprintf(b, "type %s struct {\n", typeName)
-				for n, ch := range f.Children {
+				// 子フィールド順序を決定化
+				childKeys := slices.Sorted(maps.Keys(f.Children))
+				for _, n := range childKeys {
+					ch := f.Children[n]
 					fmt.Fprintf(b, "\t%s %s\n", util.Export(n), goTypeOf(n, ch))
 				}
 				fmt.Fprintf(b, "}\n\n")
 			}
-			for _, ch := range f.Children {
+			// 子の走査順序を決定化
+			childKeys := slices.Sorted(maps.Keys(f.Children))
+			for _, n := range childKeys {
+				ch := f.Children[n]
 				walk(prefix+util.Export(f.Name), ch)
 			}
 		case scan.KindSlice, scan.KindMap:
@@ -100,7 +109,10 @@ func emitTypes(b *strings.Builder, s scan.Schema) {
 			}
 		}
 	}
-	for _, f := range s.Fields {
+	// トップレベル順序を決定化
+	topKeys := slices.Sorted(maps.Keys(s.Fields))
+	for _, k := range topKeys {
+		f := s.Fields[k]
 		walk("", f)
 	}
 }

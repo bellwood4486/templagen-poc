@@ -19,8 +19,8 @@ type User struct {
 }
 
 type Params struct {
-	User User
 	Message string
+	User User
 }
 
 func Render(w io.Writer, p Params) error { return Template().Execute(w, p) }
