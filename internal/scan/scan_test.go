@@ -88,15 +88,6 @@ func TestScanTemplate_Index_MakesMapString(t *testing.T) {
 	assertKind(t, meta.Elem, scan.KindString)
 }
 
-func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
-	t.Helper()
-	f := s.Fields[name]
-	if f == nil {
-		t.Fatalf("top-level field %q not found", name)
-	}
-	return f
-}
-
 func TestScanTemplate_DeepNestedPath(t *testing.T) {
 	src := `{{ .User.Address.City }}`
 	sch, err := scan.ScanTemplate(src)
@@ -130,6 +121,15 @@ func TestScanTemplate_WithThenRange_NestedUnderPrefix(t *testing.T) {
 	assertKind(t, items.Elem, scan.KindStruct)
 	title := getChild(t, items.Elem, "Title")
 	assertKind(t, title, scan.KindString)
+}
+
+func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
+	t.Helper()
+	f := s.Fields[name]
+	if f == nil {
+		t.Fatalf("top-level field %q not found", name)
+	}
+	return f
 }
 
 func getChild(t *testing.T, f *scan.Field, name string) *scan.Field {
