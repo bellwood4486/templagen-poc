@@ -110,6 +110,28 @@ func TestScanTemplate_DeepNestedPath(t *testing.T) {
 	assertKind(t, city, scan.KindString)
 }
 
+func TestScanTemplate_WithThenRange_NestedUnderPrefix(t *testing.T) {
+	src := `
+{{ with .Section }}
+	{{ range .Items }}{{ .Title }}{{ end }}
+{{ end}}
+`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	section := getTop(t, sch, "Section")
+	items := getChild(t, section, "Items")
+	assertKind(t, items, scan.KindSlice)
+	if items.Elem == nil {
+		t.Fatal("Items.Elem is nil")
+	}
+	assertKind(t, items.Elem, scan.KindStruct)
+	title := getChild(t, items.Elem, "Title")
+	assertKind(t, title, scan.KindString)
+}
+
 func getChild(t *testing.T, f *scan.Field, name string) *scan.Field {
 	t.Helper()
 	if f.Children == nil {

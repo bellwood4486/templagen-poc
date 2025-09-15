@@ -248,48 +248,70 @@ func ensurePath(s *Schema, parts []string, leafAsString bool) {
         cur = ensureStruct(s.Fields, parts[0])
     }
 
-	for i := 1; i < len(parts); i++ {
-		// スライスは要素へ潜る
-		if cur.Kind == KindSlice {
-			if cur.Elem == nil {
-				cur.Elem = &Field{
-					Name:     cur.Name + "Item",
-					Kind:     KindStruct,
-					Children: map[string]*Field{},
-				}
-			}
-			cur = cur.Elem
-		}
-		if cur.Children == nil {
-			cur.Children = map[string]*Field{}
-		}
+    for i := 1; i < len(parts); i++ {
+        // スライスは要素へ潜る
+        if cur.Kind == KindSlice {
+            if cur.Elem == nil {
+                cur.Elem = &Field{
+                    Name:     cur.Name + "Item",
+                    Kind:     KindStruct,
+                    Children: map[string]*Field{},
+                }
+            }
+            cur = cur.Elem
+        }
+        if cur.Children == nil {
+            cur.Children = map[string]*Field{}
+        }
 
-		name := parts[i]
-		if i == len(parts)-1 {
-			// 葉は string として確保（既存確定は尊重）
-			if ch, ok := cur.Children[name]; ok && ch != nil {
-				switch ch.Kind {
-				case KindSlice, KindMap:
-					return
-				case KindStruct:
-					if len(ch.Children) == 0 {
-						*ch = Field{
-							Name: util.Export(name),
-							Kind: KindString,
-						}
-					}
-				default:
-					return
-				}
-			}
-			cur.Children[name] = &Field{
-				Name: util.Export(name),
-				Kind: KindString,
-			}
-			return
-		}
-		cur = ensureStruct(cur.Children, name)
-	}
+        name := parts[i]
+        if i == len(parts)-1 {
+            // 葉は string として確保（既存確定は尊重）
+            if ch, ok := cur.Children[name]; ok && ch != nil {
+                switch ch.Kind {
+                case KindSlice, KindMap:
+                    return
+                case KindStruct:
+                    if len(ch.Children) == 0 {
+                        *ch = Field{
+                            Name: util.Export(name),
+                            Kind: KindString,
+                        }
+                    }
+                default:
+                    return
+                }
+            }
+            cur.Children[name] = &Field{
+                Name: util.Export(name),
+                Kind: KindString,
+            }
+            return
+        }
+
+        // 中間ノードの処理: 既存の Slice/Map を壊さず尊重し、必要なら昇格
+        if ch := cur.Children[name]; ch != nil {
+            switch ch.Kind {
+            case KindSlice, KindMap:
+                // コンテナはそのまま潜る
+                cur = ch
+            case KindStruct:
+                if ch.Children == nil {
+                    ch.Children = map[string]*Field{}
+                }
+                cur = ch
+            default:
+                // String 等 → Struct に昇格
+                ch.Kind = KindStruct
+                if ch.Children == nil {
+                    ch.Children = map[string]*Field{}
+                }
+                cur = ch
+            }
+        } else {
+            cur = ensureStruct(cur.Children, name)
+        }
+    }
 }
 
 // ensureStruct は name に対応するノードを必ず struct として返します。
