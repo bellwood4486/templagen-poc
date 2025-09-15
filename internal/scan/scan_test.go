@@ -73,6 +73,21 @@ func TestScanTemplate_Range_MakesSliceAndElementStruct(t *testing.T) {
 	assertKind(t, id, scan.KindString)
 }
 
+func TestScanTemplate_Index_MakesMapString(t *testing.T) {
+	src := `{{ index .Meta "env" }}`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	meta := getTop(t, sch, "Meta")
+	assertKind(t, meta, scan.KindMap)
+	if meta.Elem == nil {
+		t.Fatal("Meta.Elem is nil")
+	}
+	assertKind(t, meta.Elem, scan.KindString)
+}
+
 func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
 	t.Helper()
 	f := s.Fields[name]

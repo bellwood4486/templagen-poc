@@ -1,10 +1,11 @@
 package scan
 
 import (
-	"fmt"
-	tplparse "text/template/parse"
+    "fmt"
+    "text/template"
+    tplparse "text/template/parse"
 
-	"github.com/bellwood4486/templagen-poc/internal/util"
+    "github.com/bellwood4486/templagen-poc/internal/util"
 )
 
 // Kind は推論されたフィールド種別を表します。
@@ -34,19 +35,19 @@ type Schema struct {
 // フィールド参照からスキーマ木を推論します。
 // 既定では葉はすべて string として扱い、 range は []struct{}, index は map[string]string を推論します。
 func ScanTemplate(src string) (Schema, error) {
-	trees, err := tplparse.Parse("tpl", src, "", "")
-	if err != nil {
-		return Schema{}, fmt.Errorf("failed to parse template: %w", err)
-	}
-	t := trees["tpl"]
-	if t == nil {
-		return Schema{}, fmt.Errorf("template not found: %s", "tpl")
-	}
+    // Use text/template to ensure built-in funcs (e.g., index) are defined.
+    tmpl, err := template.New("tpl").Parse(src)
+    if err != nil {
+        return Schema{}, fmt.Errorf("failed to parse template: %w", err)
+    }
+    if tmpl.Tree == nil || tmpl.Tree.Root == nil {
+        return Schema{}, fmt.Errorf("template not found: %s", "tpl")
+    }
 
-	s := Schema{Fields: map[string]*Field{}}
-	walk(t.Root, &s, ctx{})
+    s := Schema{Fields: map[string]*Field{}}
+    walk(tmpl.Tree.Root, &s, ctx{})
 
-	return s, nil
+    return s, nil
 }
 
 // ctx は現在の .(ドット)を表すパスを保持します。
