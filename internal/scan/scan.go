@@ -220,11 +220,32 @@ func ensurePath(s *Schema, parts []string, leafAsString bool) {
 		return
 	}
 
-	// 2要素以上は中間を struct で掘っていく
-	if s.Fields == nil {
-		s.Fields = map[string]*Field{}
-	}
-	cur := ensureStruct(s.Fields, parts[0])
+    // 2要素以上は中間を struct で掘っていく。
+    // 先頭セグメントが既に存在する場合は種別を尊重する（特に Slice/Map を上書きしない）。
+    // 存在しない場合は struct として作成する。
+    if s.Fields == nil {
+        s.Fields = map[string]*Field{}
+    }
+    var cur *Field
+    if existing := s.Fields[parts[0]]; existing != nil {
+        // Slice/Map は保持し、String 等は struct に昇格させる
+        switch existing.Kind {
+        case KindSlice, KindMap:
+            // そのまま尊重
+        case KindStruct:
+            if existing.Children == nil {
+                existing.Children = map[string]*Field{}
+            }
+        default:
+            existing.Kind = KindStruct
+            if existing.Children == nil {
+                existing.Children = map[string]*Field{}
+            }
+        }
+        cur = existing
+    } else {
+        cur = ensureStruct(s.Fields, parts[0])
+    }
 
 	for i := 1; i < len(parts); i++ {
 		// スライスは要素へ潜る

@@ -25,7 +25,7 @@ func TestScanTemplate_SimpleFieldsAndNested(t *testing.T) {
 	assertKind(t, msg, scan.KindString)
 }
 
-func TestScanTemplate_ElseRestoresDot(t *testing.T) {
+func TestScanTemplate_WithScope_ElseRestoresDot(t *testing.T) {
 	src := `
 {{ with .User }}
 	{{ .Name }}
@@ -46,6 +46,31 @@ func TestScanTemplate_ElseRestoresDot(t *testing.T) {
 	// else 側は元のドット（トップレベル）に戻るはず
 	msg := getTop(t, sch, "Message")
 	assertKind(t, msg, scan.KindString)
+}
+
+func TestScanTemplate_Range_MakesSliceAndElementStruct(t *testing.T) {
+	src := `
+<ul>
+{{ range .Items }}
+	<li>{{ .Title }} #{{ .ID }}</li>
+{{ end }}
+</ul>
+`
+	sch, err := scan.ScanTemplate(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	items := getTop(t, sch, "Items")
+	assertKind(t, items, scan.KindSlice)
+	if items.Elem == nil {
+		t.Fatal("Items.Elem is nil")
+	}
+	assertKind(t, items.Elem, scan.KindStruct)
+	title := getChild(t, items.Elem, "Title")
+	assertKind(t, title, scan.KindString)
+	id := getChild(t, items.Elem, "ID")
+	assertKind(t, id, scan.KindString)
 }
 
 func getTop(t *testing.T, s scan.Schema, name string) *scan.Field {
