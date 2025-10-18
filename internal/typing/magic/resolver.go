@@ -6,14 +6,14 @@ import (
 	"github.com/bellwood4486/templagen-poc/internal/util"
 )
 
-// TypeResolver manages type overrides from @param directives
+// TypeResolver は @param ディレクティブからの型オーバーライドを管理する
 type TypeResolver struct {
-	overrides    map[string]string      // path -> Go type string (e.g., "User.Age" -> "int")
-	structFields map[string]map[string]string  // path -> field definitions for struct types
+	overrides    map[string]string      // パス -> Go型文字列 (例: "User.Age" -> "int")
+	structFields map[string]map[string]string  // パス -> 構造体型のフィールド定義
 	imports      map[string]struct{}
 }
 
-// NewTypeResolver creates a TypeResolver from template source
+// NewTypeResolver はテンプレートソースからTypeResolverを作成する
 func NewTypeResolver(src string) (*TypeResolver, error) {
 	directives, err := ParseParams(src)
 	if err != nil {
@@ -27,13 +27,13 @@ func NewTypeResolver(src string) (*TypeResolver, error) {
 	}
 
 	for _, dir := range directives {
-		// Handle []struct{...} specially to create named types
+		// []struct{...} を特別に扱い、名前付き型を作成
 		if dir.Type.Kind == TypeKindSlice && dir.Type.Elem != nil && dir.Type.Elem.Kind == TypeKindStruct {
-			// Create a named type like "ItemsItem" for []struct{...}
+			// []struct{...} に対して "ItemsItem" のような名前付き型を作成
 			typeName := util.Export(dir.Path) + "Item"
 			resolver.overrides[dir.Path] = "[]" + typeName
 
-			// Store struct field definitions
+			// 構造体フィールド定義を保存
 			fields := make(map[string]string)
 			for _, field := range dir.Type.Elem.Fields {
 				fields[field.Name] = resolver.typeExprToString(field.Type)
@@ -50,14 +50,14 @@ func NewTypeResolver(src string) (*TypeResolver, error) {
 	return resolver, nil
 }
 
-// GetType returns the type override for a given path, if any
+// GetType は指定されたパスに対する型オーバーライドがあれば返す
 func (r *TypeResolver) GetType(path []string) (string, bool) {
 	key := strings.Join(path, ".")
 	typ, ok := r.overrides[key]
 	return typ, ok
 }
 
-// RequiredImports returns the list of imports required by type overrides
+// RequiredImports は型オーバーライドに必要なインポートのリストを返す
 func (r *TypeResolver) RequiredImports() []string {
 	var result []string
 	for imp := range r.imports {
@@ -66,17 +66,17 @@ func (r *TypeResolver) RequiredImports() []string {
 	return result
 }
 
-// GetAllOverrides returns all type overrides
+// GetAllOverrides はすべての型オーバーライドを返す
 func (r *TypeResolver) GetAllOverrides() map[string]string {
 	return r.overrides
 }
 
-// GetStructFields returns struct field definitions for a given path
+// GetStructFields は指定されたパスの構造体フィールド定義を返す
 func (r *TypeResolver) GetStructFields(path string) map[string]string {
 	return r.structFields[path]
 }
 
-// typeExprToString converts TypeExpr to Go type string
+// typeExprToString はTypeExprをGo型文字列に変換する
 func (r *TypeResolver) typeExprToString(expr TypeExpr) string {
 	switch expr.Kind {
 	case TypeKindBase:
@@ -97,8 +97,8 @@ func (r *TypeResolver) typeExprToString(expr TypeExpr) string {
 		}
 		return "*string"
 	case TypeKindStruct:
-		// For struct, we'll generate inline struct type
-		// This is a simplified version - in practice we might want to generate named types
+		// 構造体の場合、インライン構造体型を生成
+		// これは簡略版 - 実際には名前付き型を生成することも検討
 		var fields []string
 		for _, f := range expr.Fields {
 			fields = append(fields, f.Name + " " + r.typeExprToString(f.Type))
@@ -109,7 +109,7 @@ func (r *TypeResolver) typeExprToString(expr TypeExpr) string {
 	}
 }
 
-// collectImportsFromExpr collects required imports from TypeExpr
+// collectImportsFromExpr はTypeExprから必要なインポートを収集する
 func (r *TypeResolver) collectImportsFromExpr(expr *TypeExpr) {
 	if expr == nil {
 		return

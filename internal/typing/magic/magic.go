@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// TypeKind represents the kind of type expression
+// TypeKind は型表現の種類を表す
 type TypeKind int
 
 const (
@@ -17,30 +17,30 @@ const (
 	TypeKindStruct
 )
 
-// TypeExpr represents a parsed type expression
+// TypeExpr はパース済みの型表現を表す
 type TypeExpr struct {
 	Kind     TypeKind
-	BaseType string     // for base types: "string", "int", "time.Time"
-	Elem     *TypeExpr  // for slice/map/pointer
-	Fields   []FieldDef // for struct
+	BaseType string     // 基本型用: "string", "int", "time.Time"
+	Elem     *TypeExpr  // スライス/マップ/ポインタ用
+	Fields   []FieldDef // 構造体用
 }
 
-// FieldDef represents a field in struct type
+// FieldDef は構造体型のフィールドを表す
 type FieldDef struct {
 	Name string
 	Type TypeExpr
 }
 
-// ParamDirective represents a @param directive
+// ParamDirective は @param ディレクティブを表す
 type ParamDirective struct {
-	Path string   // e.g., "User.Age"
-	Type TypeExpr // parsed type
-	Line int      // line number in template
+	Path string   // 例: "User.Age"
+	Type TypeExpr // パース済みの型
+	Line int      // テンプレート内の行番号
 }
 
 var paramRegex = regexp.MustCompile(`\{\{/\*\s*@param\s+(\S+)\s+(.+?)\s*\*/\}\}`)
 
-// ParseParams extracts @param directives from template source
+// ParseParams はテンプレートソースから @param ディレクティブを抽出する
 func ParseParams(src string) ([]ParamDirective, error) {
 	var directives []ParamDirective
 

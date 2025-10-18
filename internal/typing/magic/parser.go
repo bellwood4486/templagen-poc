@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-// parseType parses a type string into TypeExpr
+// parseType は型文字列をTypeExprにパースする
 func parseType(s string) (TypeExpr, error) {
 	p := &typeParser{input: s, pos: 0}
 	return p.parseType()
@@ -20,7 +20,7 @@ type typeParser struct {
 func (p *typeParser) parseType() (TypeExpr, error) {
 	p.skipWhitespace()
 
-	// Check for slice
+	// スライスのチェック
 	if strings.HasPrefix(p.remaining(), "[]") {
 		p.pos += 2
 		elem, err := p.parseType()
@@ -30,7 +30,7 @@ func (p *typeParser) parseType() (TypeExpr, error) {
 		return TypeExpr{Kind: TypeKindSlice, Elem: &elem}, nil
 	}
 
-	// Check for map
+	// マップのチェック
 	if strings.HasPrefix(p.remaining(), "map[string]") {
 		p.pos += 11
 		elem, err := p.parseType()
@@ -40,7 +40,7 @@ func (p *typeParser) parseType() (TypeExpr, error) {
 		return TypeExpr{Kind: TypeKindMap, Elem: &elem}, nil
 	}
 
-	// Check for pointer
+	// ポインタのチェック
 	if strings.HasPrefix(p.remaining(), "*") {
 		p.pos++
 		elem, err := p.parseType()
@@ -50,12 +50,12 @@ func (p *typeParser) parseType() (TypeExpr, error) {
 		return TypeExpr{Kind: TypeKindPointer, Elem: &elem}, nil
 	}
 
-	// Check for struct
+	// 構造体のチェック
 	if strings.HasPrefix(p.remaining(), "struct{") {
 		return p.parseStruct()
 	}
 
-	// Parse base type
+	// 基本型のパース
 	return p.parseBaseType()
 }
 
@@ -78,7 +78,7 @@ func (p *typeParser) parseBaseType() (TypeExpr, error) {
 }
 
 func (p *typeParser) parseStruct() (TypeExpr, error) {
-	// Skip "struct{"
+	// "struct{" をスキップ
 	p.pos += 7
 
 	var fields []FieldDef
@@ -94,7 +94,7 @@ func (p *typeParser) parseStruct() (TypeExpr, error) {
 			break
 		}
 
-		// Parse field name
+		// フィールド名のパース
 		name := p.parseIdentifier()
 		if name == "" {
 			return TypeExpr{}, fmt.Errorf("expected field name at position %d", p.pos)
@@ -102,7 +102,7 @@ func (p *typeParser) parseStruct() (TypeExpr, error) {
 
 		p.skipWhitespace()
 
-		// Parse field type
+		// フィールド型のパース
 		fieldType, err := p.parseType()
 		if err != nil {
 			return TypeExpr{}, fmt.Errorf("invalid field type for %s: %w", name, err)
@@ -112,7 +112,7 @@ func (p *typeParser) parseStruct() (TypeExpr, error) {
 
 		p.skipWhitespace()
 
-		// Check for separator or end
+		// セパレータまたは終端のチェック
 		if p.pos < len(p.input) && p.input[p.pos] == ';' {
 			p.pos++
 			continue

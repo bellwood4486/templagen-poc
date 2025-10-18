@@ -33,7 +33,7 @@ func Emit(u Unit) (string, error) {
 	return generateCode(typed, u.Pkg, u.SourcePath), nil
 }
 
-// generateCode generates Go code from typed schema
+// generateCode は型付きスキーマからGoコードを生成する
 func generateCode(typed *typing.TypedSchema, pkg string, sourcePath string) string {
 	imports := map[string]struct{}{
 		"io":            {},
