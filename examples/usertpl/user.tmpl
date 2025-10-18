@@ -1,0 +1,17 @@
+{{/* @param User.Age int */}}
+{{/* @param User.Email *string */}}
+{{/* @param Items []struct{ID int64; Title string; Price float64} */}}
+<div class="user-profile">
+  <h1>{{ .User.Name }}</h1>
+  <p>Age: {{ .User.Age }}</p>
+  {{ if .User.Email }}<p>Email: {{ .User.Email }}</p>{{ end }}
+</div>
+
+<div class="items">
+  <h2>Items</h2>
+  <ul>
+  {{ range .Items }}
+    <li>#{{ .ID }}: {{ .Title }} - ${{ .Price }}</li>
+  {{ end }}
+  </ul>
+</div>

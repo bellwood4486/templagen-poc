@@ -282,3 +282,157 @@ func TestEmit_CompilesInTempModule(t *testing.T) {
 		t.Fatalf("go build failed: %v\n%s", err, string(out))
 	}
 }
+
+func TestEmit_WithParamOverride_BasicTypes(t *testing.T) {
+	src := `
+{{/* @param User.Age int */}}
+{{/* @param User.Email *string */}}
+{{ .User.Name }} is {{ .User.Age }} years old.
+{{ if .User.Email }}Email: {{ .User.Email }}{{ end }}
+`
+	u := gen.Unit{
+		Pkg:           "x",
+		SourcePath:    "tpl.tmpl",
+		SourceLiteral: src,
+	}
+
+	code, err := gen.Emit(u)
+	if err != nil {
+		t.Fatalf("Emit failed: %v", err)
+	}
+
+	f := parseCode(t, code)
+
+	// Check User struct has Age int and Email *string
+	user := findType(f, "User")
+	if user == nil {
+		t.Fatal("User type not found")
+	}
+
+	foundAge := false
+	foundEmail := false
+	for _, field := range user.Fields.List {
+		if len(field.Names) == 0 {
+			continue
+		}
+		name := field.Names[0].Name
+		if name == "Age" {
+			if id, ok := field.Type.(*ast.Ident); ok && id.Name == "int" {
+				foundAge = true
+			}
+		}
+		if name == "Email" {
+			if st, ok := field.Type.(*ast.StarExpr); ok {
+				if id, ok := st.X.(*ast.Ident); ok && id.Name == "string" {
+					foundEmail = true
+				}
+			}
+		}
+	}
+
+	if !foundAge {
+		t.Error("User.Age int not found")
+	}
+	if !foundEmail {
+		t.Error("User.Email *string not found")
+	}
+}
+
+func TestEmit_WithParamOverride_SliceType(t *testing.T) {
+	src := `
+{{/* @param Items []struct{ID int64; Title string} */}}
+{{ range .Items }}{{ .ID }}: {{ .Title }}{{ end }}
+`
+	u := gen.Unit{
+		Pkg:           "x",
+		SourcePath:    "tpl.tmpl",
+		SourceLiteral: src,
+	}
+
+	code, err := gen.Emit(u)
+	if err != nil {
+		t.Fatalf("Emit failed: %v", err)
+	}
+
+	f := parseCode(t, code)
+
+	// Check ItemsItem has ID int64 and Title string
+	item := findType(f, "ItemsItem")
+	if item == nil {
+		t.Fatal("ItemsItem type not found")
+	}
+
+	foundID := false
+	foundTitle := false
+	for _, field := range item.Fields.List {
+		if len(field.Names) == 0 {
+			continue
+		}
+		name := field.Names[0].Name
+		if name == "ID" {
+			if id, ok := field.Type.(*ast.Ident); ok && id.Name == "int64" {
+				foundID = true
+			}
+		}
+		if name == "Title" {
+			if id, ok := field.Type.(*ast.Ident); ok && id.Name == "string" {
+				foundTitle = true
+			}
+		}
+	}
+
+	if !foundID {
+		t.Error("ItemsItem.ID int64 not found")
+	}
+	if !foundTitle {
+		t.Error("ItemsItem.Title string not found")
+	}
+}
+
+func TestEmit_WithParamOverride_TimeImport(t *testing.T) {
+	src := `
+{{/* @param CreatedAt time.Time */}}
+Created: {{ .CreatedAt }}
+`
+	u := gen.Unit{
+		Pkg:           "x",
+		SourcePath:    "tpl.tmpl",
+		SourceLiteral: src,
+	}
+
+	code, err := gen.Emit(u)
+	if err != nil {
+		t.Fatalf("Emit failed: %v", err)
+	}
+
+	f := parseCode(t, code)
+
+	// Check time import
+	if !hasImport(f, "time", "") {
+		t.Error("import time not found")
+	}
+
+	// Check Params has CreatedAt time.Time
+	params := findType(f, "Params")
+	if params == nil {
+		t.Fatal("Params type not found")
+	}
+
+	foundCreatedAt := false
+	for _, field := range params.Fields.List {
+		if len(field.Names) == 0 {
+			continue
+		}
+		if field.Names[0].Name == "CreatedAt" {
+			if se, ok := field.Type.(*ast.SelectorExpr); ok {
+				if x, ok := se.X.(*ast.Ident); ok && x.Name == "time" && se.Sel.Name == "Time" {
+					foundCreatedAt = true
+				}
+			}
+		}
+	}
+
+	if !foundCreatedAt {
+		t.Error("Params.CreatedAt time.Time not found")
+	}
+}
