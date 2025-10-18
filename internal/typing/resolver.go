@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bellwood4486/templagen-poc/internal/magic"
 	"github.com/bellwood4486/templagen-poc/internal/scan"
+	"github.com/bellwood4486/templagen-poc/internal/typing/magic"
 	"github.com/bellwood4486/templagen-poc/internal/util"
 )
 
@@ -163,7 +163,7 @@ func extractNamedTypes(typed *TypedSchema) {
 		if strings.HasPrefix(field.GoType, "[]") {
 			elemType := field.GoType[2:]
 			if !isBuiltinType(elemType) && !strings.Contains(elemType, "[") &&
-			   !strings.Contains(elemType, "map") && !strings.HasPrefix(elemType, "struct{") {
+				!strings.Contains(elemType, "map") && !strings.HasPrefix(elemType, "struct{") {
 				// すでに登録済みでない場合のみ追加
 				if _, exists := namedTypes[elemType]; !exists {
 					// scan結果から構造体を探す
@@ -180,8 +180,8 @@ func extractNamedTypes(typed *TypedSchema) {
 
 		// 構造体型の場合
 		if field.GoType != "" && !isBuiltinType(field.GoType) &&
-		   !strings.Contains(field.GoType, "[") && !strings.Contains(field.GoType, "map") &&
-		   field.GoType != "Params" && field.Children != nil && len(field.Children) > 0 {
+			!strings.Contains(field.GoType, "[") && !strings.Contains(field.GoType, "map") &&
+			field.GoType != "Params" && field.Children != nil && len(field.Children) > 0 {
 			if _, exists := namedTypes[field.GoType]; !exists {
 				namedType := &NamedType{
 					Name:   field.GoType,
