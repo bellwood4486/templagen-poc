@@ -9,11 +9,31 @@ import (
 	"time"
 )
 
-//go:embed templates/all_types.tmpl
-var all_typesTplSource string
+//go:embed templates/basic_types.tmpl
+var basic_typesTplSource string
+
+//go:embed templates/complex_types.tmpl
+var complex_typesTplSource string
+
+//go:embed templates/map_types.tmpl
+var map_typesTplSource string
+
+//go:embed templates/pointer_types.tmpl
+var pointer_typesTplSource string
+
+//go:embed templates/slice_types.tmpl
+var slice_typesTplSource string
+
+//go:embed templates/struct_types.tmpl
+var struct_typesTplSource string
 
 var templates = map[string]*template.Template{
-	"all_types": template.Must(template.New("all_types").Option("missingkey=error").Parse(all_typesTplSource)),
+	"basic_types": template.Must(template.New("basic_types").Option("missingkey=error").Parse(basic_typesTplSource)),
+	"complex_types": template.Must(template.New("complex_types").Option("missingkey=error").Parse(complex_typesTplSource)),
+	"map_types": template.Must(template.New("map_types").Option("missingkey=error").Parse(map_typesTplSource)),
+	"pointer_types": template.Must(template.New("pointer_types").Option("missingkey=error").Parse(pointer_typesTplSource)),
+	"slice_types": template.Must(template.New("slice_types").Option("missingkey=error").Parse(slice_typesTplSource)),
+	"struct_types": template.Must(template.New("struct_types").Option("missingkey=error").Parse(struct_typesTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -21,63 +41,128 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
-type All_typesItemsItem struct {
+// Basic_types represents parameters for basic_types template
+type Basic_types struct {
+	Active bool
+	Age int
+	CreatedAt time.Time
+	Name string
+	Price float64
+	Score int64
+}
+
+type Complex_typesItemsItem struct {
 	ID int64
 	Price float64
 	Tags []string
 	Title string
 }
 
-type All_typesRecordsItem struct {
+type Complex_typesRecordsItem struct {
 	Age int
 	Name string
 	Score *int
 }
 
-type All_typesProduct struct {
+// Complex_types represents parameters for complex_types template
+type Complex_types struct {
+	Items []Complex_typesItemsItem
+	OptionalItems *[]string
+	Records []Complex_typesRecordsItem
+}
+
+// Map_types represents parameters for map_types template
+type Map_types struct {
+	Counters map[string]int
+	Features map[string]bool
+	Metadata map[string]string
+	Prices map[string]float64
+}
+
+// Pointer_types represents parameters for pointer_types template
+type Pointer_types struct {
+	Discount *float64
+	Email *string
+	MiddleScore *int
+	PhoneNumber *string
+}
+
+// Slice_types represents parameters for slice_types template
+type Slice_types struct {
+	CategoryIDs []int
+	Flags []bool
+	Ratings []float64
+	Tags []string
+}
+
+type Struct_typesProduct struct {
 	InStock bool
 	Price float64
 	SKU string
 }
 
-type All_typesUser struct {
+type Struct_typesUser struct {
 	Email string
 	ID int64
 	Name string
 }
 
-// All_types represents parameters for all_types template
-type All_types struct {
-	Active bool
-	Age int
-	CategoryIDs []int
-	Counters map[string]int
-	CreatedAt time.Time
-	Discount *float64
-	Email *string
-	Features map[string]bool
-	Flags []bool
-	Items []All_typesItemsItem
-	Metadata map[string]string
-	MiddleScore *int
-	Name string
-	OptionalItems *[]string
-	PhoneNumber *string
-	Price float64
-	Prices map[string]float64
-	Product All_typesProduct
-	Ratings []float64
-	Records []All_typesRecordsItem
-	Score int64
-	Tags []string
-	User All_typesUser
+// Struct_types represents parameters for struct_types template
+type Struct_types struct {
+	Product Struct_typesProduct
+	User Struct_typesUser
 }
 
-// RenderAll_types renders the all_types template
-func RenderAll_types(w io.Writer, p All_types) error {
-	tmpl, ok := templates["all_types"]
+// RenderBasic_types renders the basic_types template
+func RenderBasic_types(w io.Writer, p Basic_types) error {
+	tmpl, ok := templates["basic_types"]
 	if !ok {
-		return fmt.Errorf("template %q not found", "all_types")
+		return fmt.Errorf("template %q not found", "basic_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderComplex_types renders the complex_types template
+func RenderComplex_types(w io.Writer, p Complex_types) error {
+	tmpl, ok := templates["complex_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "complex_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderMap_types renders the map_types template
+func RenderMap_types(w io.Writer, p Map_types) error {
+	tmpl, ok := templates["map_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "map_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderPointer_types renders the pointer_types template
+func RenderPointer_types(w io.Writer, p Pointer_types) error {
+	tmpl, ok := templates["pointer_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "pointer_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderSlice_types renders the slice_types template
+func RenderSlice_types(w io.Writer, p Slice_types) error {
+	tmpl, ok := templates["slice_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "slice_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderStruct_types renders the struct_types template
+func RenderStruct_types(w io.Writer, p Struct_types) error {
+	tmpl, ok := templates["struct_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "struct_types")
 	}
 	return tmpl.Execute(w, p)
 }

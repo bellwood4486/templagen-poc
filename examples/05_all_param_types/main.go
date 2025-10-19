@@ -3,39 +3,60 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"time"
 )
 
 func main() {
-	// Helper function to create pointer values
+	// Helper functions to create pointer values
 	strPtr := func(s string) *string { return &s }
 	intPtr := func(i int) *int { return &i }
 	float64Ptr := func(f float64) *float64 { return &f }
 
-	// Create sample data with all supported param types
-	data := All_types{
-		// 1. Basic Types
+	fmt.Println("=== All Param Types Example ===")
+	fmt.Println()
+
+	// 1. Render basic_types template
+	fmt.Println("--- 1. Basic Types ---")
+	var buf1 bytes.Buffer
+	_ = RenderBasic_types(&buf1, Basic_types{
 		Name:      "John Doe",
 		Age:       30,
 		Score:     98765,
 		Price:     99.99,
 		Active:    true,
 		CreatedAt: time.Date(2024, 10, 19, 15, 30, 0, 0, time.UTC),
+	})
+	fmt.Print(buf1.String())
+	fmt.Println()
 
-		// 2. Pointer Types (Optional values)
+	// 2. Render pointer_types template
+	fmt.Println("--- 2. Pointer Types (Optional Fields) ---")
+	var buf2 bytes.Buffer
+	_ = RenderPointer_types(&buf2, Pointer_types{
 		Email:       strPtr("john@example.com"),
 		PhoneNumber: nil, // Not provided
 		MiddleScore: intPtr(85),
 		Discount:    float64Ptr(15.5),
+	})
+	fmt.Print(buf2.String())
+	fmt.Println()
 
-		// 3. Slice Types
+	// 3. Render slice_types template
+	fmt.Println("--- 3. Slice Types ---")
+	var buf3 bytes.Buffer
+	_ = RenderSlice_types(&buf3, Slice_types{
 		Tags:        []string{"golang", "template", "example"},
 		CategoryIDs: []int{1, 2, 3, 5, 8},
 		Ratings:     []float64{4.5, 3.8, 5.0, 4.2},
 		Flags:       []bool{true, false, true, true},
+	})
+	fmt.Print(buf3.String())
+	fmt.Println()
 
-		// 4. Map Types
+	// 4. Render map_types template
+	fmt.Println("--- 4. Map Types ---")
+	var buf4 bytes.Buffer
+	_ = RenderMap_types(&buf4, Map_types{
 		Metadata: map[string]string{
 			"author":  "templagen",
 			"version": "1.0",
@@ -56,23 +77,33 @@ func main() {
 			"logging":        true,
 			"analytics":      false,
 		},
+	})
+	fmt.Print(buf4.String())
+	fmt.Println()
 
-		// 5. Struct Types
-		User: All_typesUser{
+	// 5. Render struct_types template
+	fmt.Println("--- 5. Struct Types (Nested Fields) ---")
+	var buf5 bytes.Buffer
+	_ = RenderStruct_types(&buf5, Struct_types{
+		User: Struct_typesUser{
 			ID:    12345,
 			Name:  "Alice Smith",
 			Email: "alice@example.com",
 		},
-		Product: All_typesProduct{
+		Product: Struct_typesProduct{
 			SKU:     "PROD-001",
 			Price:   149.99,
 			InStock: true,
 		},
+	})
+	fmt.Print(buf5.String())
+	fmt.Println()
 
-		// 6. Complex/Nested Types
-
-		// Slice of structs with nested slice
-		Items: []All_typesItemsItem{
+	// 6. Render complex_types template
+	fmt.Println("--- 6. Complex/Nested Types ---")
+	var buf6 bytes.Buffer
+	_ = RenderComplex_types(&buf6, Complex_types{
+		Items: []Complex_typesItemsItem{
 			{
 				ID:    1,
 				Title: "Learning Go",
@@ -92,12 +123,8 @@ func main() {
 				Price: 49.99,
 			},
 		},
-
-		// Optional slice
 		OptionalItems: &[]string{"item1", "item2", "item3"},
-
-		// Slice of structs with optional value
-		Records: []All_typesRecordsItem{
+		Records: []Complex_typesRecordsItem{
 			{
 				Name:  "Record A",
 				Age:   25,
@@ -114,14 +141,7 @@ func main() {
 				Score: intPtr(88),
 			},
 		},
-	}
-
-	// Render the template
-	var buf bytes.Buffer
-	if err := RenderAll_types(&buf, data); err != nil {
-		fmt.Fprintf(os.Stderr, "Error rendering template: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Print(buf.String())
+	})
+	fmt.Print(buf6.String())
+	fmt.Println()
 }

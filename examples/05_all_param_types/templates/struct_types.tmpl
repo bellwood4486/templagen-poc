@@ -1,0 +1,12 @@
+{{/* @param User.ID int64 */}}
+{{/* @param User.Name string */}}
+{{/* @param User.Email string */}}
+
+{{/* @param Product.SKU string */}}
+{{/* @param Product.Price float64 */}}
+{{/* @param Product.InStock bool */}}
+
+=== Struct Types (Nested Fields) ===
+
+User: ID={{ .User.ID }}, Name={{ .User.Name }}, Email={{ .User.Email }}
+Product: SKU={{ .Product.SKU }}, Price=${{ .Product.Price }}, InStock={{ .Product.InStock }}

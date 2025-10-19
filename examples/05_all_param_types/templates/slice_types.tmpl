@@ -1,0 +1,11 @@
+{{/* @param Tags []string */}}
+{{/* @param CategoryIDs []int */}}
+{{/* @param Ratings []float64 */}}
+{{/* @param Flags []bool */}}
+
+=== Slice Types ===
+
+Tags: {{ range $i, $tag := .Tags }}{{ if $i }}, {{ end }}{{ $tag }}{{ end }}
+Category IDs: {{ range $i, $id := .CategoryIDs }}{{ if $i }}, {{ end }}{{ $id }}{{ end }}
+Ratings: {{ range $i, $rating := .Ratings }}{{ if $i }}, {{ end }}{{ $rating }}{{ end }}
+Flags: {{ range $i, $flag := .Flags }}{{ if $i }}, {{ end }}{{ $flag }}{{ end }}

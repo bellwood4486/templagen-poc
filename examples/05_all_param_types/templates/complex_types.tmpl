@@ -1,0 +1,26 @@
+{{/* @param Items []struct{ID int64; Title string; Tags []string; Price float64} */}}
+{{/* @param OptionalItems *[]string */}}
+{{/* @param Records []struct{Name string; Age int; Score *int} */}}
+
+=== Complex/Nested Types ===
+
+## Items (slice of structs):
+{{- range .Items }}
+- ID: {{ .ID }}, Title: {{ .Title }}, Price: ${{ .Price }}
+  Tags: {{ range $i, $tag := .Tags }}{{ if $i }}, {{ end }}{{ $tag }}{{ end }}
+{{- end }}
+
+## Optional Items:
+{{- if .OptionalItems }}
+{{- range .OptionalItems }}
+- {{ . }}
+{{- end }}
+{{- else }}
+(not provided)
+{{- end }}
+
+## Records (slice of structs with optional fields):
+{{- range .Records }}
+- Name: {{ .Name }}, Age: {{ .Age }}
+  Score: {{ if .Score }}{{ .Score }}{{ else }}(not set){{ end }}
+{{- end }}

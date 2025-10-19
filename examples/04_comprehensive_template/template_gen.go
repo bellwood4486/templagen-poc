@@ -8,11 +8,23 @@ import (
 	"text/template"
 )
 
-//go:embed templates/report.tmpl
-var reportTplSource string
+//go:embed templates/advanced.tmpl
+var advancedTplSource string
+
+//go:embed templates/basic_fields.tmpl
+var basic_fieldsTplSource string
+
+//go:embed templates/collections.tmpl
+var collectionsTplSource string
+
+//go:embed templates/control_flow.tmpl
+var control_flowTplSource string
 
 var templates = map[string]*template.Template{
-	"report": template.Must(template.New("report").Option("missingkey=error").Parse(reportTplSource)),
+	"advanced": template.Must(template.New("advanced").Option("missingkey=error").Parse(advancedTplSource)),
+	"basic_fields": template.Must(template.New("basic_fields").Option("missingkey=error").Parse(basic_fieldsTplSource)),
+	"collections": template.Must(template.New("collections").Option("missingkey=error").Parse(collectionsTplSource)),
+	"control_flow": template.Must(template.New("control_flow").Option("missingkey=error").Parse(control_flowTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -20,67 +32,106 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
-type ReportAuthor struct {
+type AdvancedCompany struct {
+	Department AdvancedDepartment
+}
+
+type AdvancedDepartment struct {
+	Team AdvancedTeam
+}
+
+type AdvancedManager struct {
+	Name string
+}
+
+type AdvancedProject struct {
+	Description string
+	Name string
+	Tasks []AdvancedTasksItem
+}
+
+type AdvancedTasksItem struct {
+	Status string
+	Title string
+}
+
+type AdvancedTeam struct {
+	Manager AdvancedManager
+}
+
+// Advanced represents parameters for advanced template
+type Advanced struct {
+	Company AdvancedCompany
+	Project AdvancedProject
+}
+
+type Basic_fieldsAuthor struct {
 	Email string
 	Name string
 }
 
-type ReportCompany struct {
-	Department ReportDepartment
+// Basic_fields represents parameters for basic_fields template
+type Basic_fields struct {
+	Author Basic_fieldsAuthor
+	Title string
 }
 
-type ReportDepartment struct {
-	Team ReportTeam
-}
-
-type ReportItemsItem struct {
+type CollectionsItemsItem struct {
 	Description string
 	ID string
 	Title string
 }
 
-type ReportManager struct {
-	Name string
+// Collections represents parameters for collections template
+type Collections struct {
+	Items []CollectionsItemsItem
+	Meta map[string]string
 }
 
-type ReportProject struct {
-	Description string
-	Name string
-	Tasks []ReportTasksItem
-}
-
-type ReportSummary struct {
+type Control_flowSummary struct {
 	Content string
 	LastUpdated string
 }
 
-type ReportTasksItem struct {
-	Status string
-	Title string
-}
-
-type ReportTeam struct {
-	Manager ReportManager
-}
-
-// Report represents parameters for report template
-type Report struct {
-	Author ReportAuthor
-	Company ReportCompany
+// Control_flow represents parameters for control_flow template
+type Control_flow struct {
 	DefaultMessage string
-	Items []ReportItemsItem
-	Meta map[string]string
-	Project ReportProject
 	Status string
-	Summary ReportSummary
-	Title string
+	Summary Control_flowSummary
 }
 
-// RenderReport renders the report template
-func RenderReport(w io.Writer, p Report) error {
-	tmpl, ok := templates["report"]
+// RenderAdvanced renders the advanced template
+func RenderAdvanced(w io.Writer, p Advanced) error {
+	tmpl, ok := templates["advanced"]
 	if !ok {
-		return fmt.Errorf("template %q not found", "report")
+		return fmt.Errorf("template %q not found", "advanced")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderBasic_fields renders the basic_fields template
+func RenderBasic_fields(w io.Writer, p Basic_fields) error {
+	tmpl, ok := templates["basic_fields"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "basic_fields")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderCollections renders the collections template
+func RenderCollections(w io.Writer, p Collections) error {
+	tmpl, ok := templates["collections"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "collections")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// RenderControl_flow renders the control_flow template
+func RenderControl_flow(w io.Writer, p Control_flow) error {
+	tmpl, ok := templates["control_flow"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "control_flow")
 	}
 	return tmpl.Execute(w, p)
 }
