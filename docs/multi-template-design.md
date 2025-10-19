@@ -51,11 +51,12 @@ templates/
 ### 4.3 生成される構造
 
 ```go
-// templates_gen.go
+// template_gen.go (単数形)
 package templates
 
 import (
     _ "embed"
+    "fmt"       // エラーハンドリング用に必須
     "io"
     "text/template"
 )
@@ -66,35 +67,52 @@ var userTplSource string
 //go:embed user_list.tmpl
 var userListTplSource string
 
-// テンプレートごとのパラメータ型
-type User struct {
-    Name  string
+// ネストした型定義（あれば先に定義）
+type UserListUsersItem struct {
     Email string
+    Name string
 }
 
+// テンプレートごとのメインパラメータ型
+// User represents parameters for user template
+type User struct {
+    Email string
+    Name string
+}
+
+// UserList represents parameters for user_list template
 type UserList struct {
-    Users []User
     Total int
+    Users []UserListUsersItem
 }
 
-// グローバルなTemplates関数
+// Templates returns a map of all templates
 func Templates() map[string]*template.Template {
     return map[string]*template.Template{
-        "user":      template.Must(template.New("user").Parse(userTplSource)),
-        "user_list": template.Must(template.New("user_list").Parse(userListTplSource)),
+        "user":      template.Must(template.New("user").Option("missingkey=error").Parse(userTplSource)),
+        "user_list": template.Must(template.New("user_list").Option("missingkey=error").Parse(userListTplSource)),
     }
 }
 
-// 個別のレンダリング関数
+// RenderUser renders the user template
 func RenderUser(w io.Writer, p User) error {
-    return Templates()["user"].Execute(w, p)
+    tmpl, ok := Templates()["user"]
+    if !ok {
+        return fmt.Errorf("template %q not found", "user")
+    }
+    return tmpl.Execute(w, p)
 }
 
+// RenderUserList renders the user_list template
 func RenderUserList(w io.Writer, p UserList) error {
-    return Templates()["user_list"].Execute(w, p)
+    tmpl, ok := Templates()["user_list"]
+    if !ok {
+        return fmt.Errorf("template %q not found", "user_list")
+    }
+    return tmpl.Execute(w, p)
 }
 
-// 汎用レンダリング関数
+// Render renders a template by name with the given data
 func Render(w io.Writer, name string, data any) error {
     tmpl, ok := Templates()[name]
     if !ok {
@@ -110,16 +128,16 @@ func Render(w io.Writer, name string, data any) error {
 
 ```bash
 # 単一ファイル（現状と同じ）
-templagen -in user.tmpl -pkg templates -out templates_gen.go
+templagen -in user.tmpl -pkg templates -out template_gen.go
 
 # 複数ファイル（glob）
-templagen -in "*.tmpl" -pkg templates -out templates_gen.go
+templagen -in "*.tmpl" -pkg templates -out template_gen.go
 
 # ディレクトリ内の全.tmplファイル
-templagen -in "./templates/*.tmpl" -pkg templates -out templates_gen.go
+templagen -in "./templates/*.tmpl" -pkg templates -out template_gen.go
 
-# 複数ファイル（個別指定）
-templagen -in "user.tmpl,user_list.tmpl" -pkg templates -out templates_gen.go
+# 複数ファイル（個別指定）- カンマ区切り
+templagen -in "user.tmpl,user_list.tmpl" -pkg templates -out template_gen.go
 ```
 
 ### 5.2 フラグ
@@ -135,10 +153,13 @@ templagen -in "user.tmpl,user_list.tmpl" -pkg templates -out templates_gen.go
 
 ```bash
 # go:generateでの使用
-//go:generate templagen -in "*.tmpl" -pkg templates -out templates_gen.go
+//go:generate templagen -in "*.tmpl" -pkg templates -out template_gen.go
 
 # テストテンプレートを除外
-//go:generate templagen -in "*.tmpl" -exclude "*_test.tmpl" -pkg templates -out templates_gen.go
+//go:generate templagen -in "*.tmpl" -exclude "*_test.tmpl" -pkg templates -out template_gen.go
+
+# 実際のサンプルでの使用例
+//go:generate go run ../../cmd/templagen -in "templates/*.tmpl" -pkg main -out template_gen.go
 ```
 
 ## 6. 実装計画
@@ -175,41 +196,64 @@ templagen -in "user.tmpl,user_list.tmpl" -pkg templates -out templates_gen.go
 
 ### 7.2 型の名前衝突回避
 
-同じディレクトリ内で型名が衝突する場合の対処：
+実装では、テンプレート名をプレフィックスとして自動付与することで名前衝突を回避：
 
+**ネストした構造体の命名規則:**
 ```go
-// user.tmpl と admin.tmpl の両方に User型がある場合
-type UserUser struct { ... }    // user.tmpl の User
-type AdminUser struct { ... }   // admin.tmpl の User
-```
-
-または、ネストした構造として生成：
-
-```go
-type User struct {
+// nav.tmpl の Items[]のアイテム型
+type NavItemsItem struct {
+    Active bool
+    Link string
     Name string
-    // user.tmpl特有のフィールド
 }
 
-type Admin struct {
-    User User  // 共通部分を埋め込み
-    // admin.tmpl特有のフィールド
+// nav.tmpl の CurrentUser型
+type NavCurrentUser struct {
+    IsAdmin bool
+    Name string
+}
+
+// footer.tmpl の Links[]のアイテム型
+type FooterLinksItem struct {
+    Text string
+    URL string
 }
 ```
 
-## 8. 考慮事項
+**命名パターン:**
+- メインパラメータ型: `<TemplateName>` (例: `Nav`, `Footer`, `Header`)
+- ネストした構造体: `<TemplateName><FieldPath><TypeName>` (例: `NavItemsItem`, `NavCurrentUser`)
+- 配列要素の型: `<TemplateName><FieldName>Item` (例: `FooterLinksItem`)
 
-### 8.1 エラーハンドリング
+この命名規則により、異なるテンプレート間で同じフィールド名を使用しても衝突しません。
+
+## 8. 実装の詳細
+
+### 8.1 コード生成の特徴
+
+**フィールドの順序:**
+- 構造体のフィールドはアルファベット順にソートして出力（コードの安定性のため）
+- テンプレート名もアルファベット順にソート
+
+**テンプレートオプション:**
+- `Option("missingkey=error")` を設定し、未定義フィールドへのアクセスをエラーとして検出
+- 型安全性を高め、テンプレートのバグを早期発見
+
+**必須インポート:**
+- `fmt`: エラーメッセージのフォーマット用
+- `io`: Writer インターフェース用
+- `text/template`: テンプレートエンジン
+- `embed`: テンプレートファイルの埋め込み
+
+### 8.2 エラーハンドリング
 - 一部のテンプレートでパースエラーが発生した場合は、該当ファイルを報告して処理を中断
 - 型名衝突が発生した場合は、テンプレート名をプレフィックスとして自動付与
+- Render関数実行時、テンプレートが見つからない場合は明確なエラーメッセージを返す
 
-### 8.2 パフォーマンス
-- テンプレートのパースと型解析は並行処理可能
-- 生成されるTemplates()マップは初回アクセス時に遅延初期化することも検討
-
-### 8.3 型の共有
-- 将来的には共通型の自動抽出を実装可能
+### 8.3 実装の制約と将来の拡張
 - 現時点では各テンプレートが独立した型を持つシンプルな実装
+- 将来的には共通型の自動抽出を実装可能
+- パフォーマンス最適化（並行処理、遅延初期化）は今後の課題
 
 ## 9. FAQ
 
@@ -225,12 +269,27 @@ A: テンプレート名を自動的にプレフィックスとして付与し�
 ### Q: Templates()関数の使い方は？
 A: `Templates()["user"]`でテンプレートを取得できます。また、個別の`RenderUser()`関数も生成されるので、型安全に使えます。
 
-## 10. まとめ
+## 10. 実装サンプル
+
+プロジェクトには3つの実装サンプルが含まれています：
+
+1. **01_basic**: 単一テンプレートの基本的な使用例
+2. **02_param_directive**: @paramディレクティブによる型定義の例
+3. **03_multi_template**: 複数テンプレート（header, nav, footer）の統合例
+
+各サンプルには以下が含まれます：
+- `gen.go`: go:generate定義
+- `main.go`: 使用例のデモコード
+- `template_gen.go`: 生成されたコード
+- `templates/`: テンプレートファイル
+
+## 11. まとめ
 
 シンプルさを優先した設計により：
 - **使い方が直感的**: 入力パターンと出力ファイルを指定するだけ
-- **実装がシンプル**: 複雑なモード分岐がない
+- **実装がシンプル**: 単一・複数ファイルを統一的に扱う
 - **出力が予測可能**: 常に1つの統合ファイルが生成される
 - **型安全**: テンプレートごとに専用の型とRender関数
+- **エラー検出**: missingkey=errorでテンプレートバグを早期発見
 
-この設計により、複数テンプレートの管理が簡単になり、開発効率が向上します。
+この実装により、複数テンプレートの管理が簡単になり、開発効率が向上します。
