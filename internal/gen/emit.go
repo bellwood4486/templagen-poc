@@ -47,7 +47,7 @@ func Emit(units []Unit) (string, error) {
 	// 各テンプレートを処理
 	for _, unit := range units {
 		// テンプレート名を抽出
-		templateName := ExtractTemplateName(unit.SourcePath)
+		templateName := extractTemplateName(unit.SourcePath)
 		typeName := util.Export(templateName)
 
 		// テンプレートをスキャン
@@ -183,10 +183,10 @@ func Emit(units []Unit) (string, error) {
 	return b.String(), nil
 }
 
-// ExtractTemplateName はファイルパスからテンプレート名を抽出する
+// extractTemplateName はファイルパスからテンプレート名を抽出する
 // 例: "templates/user_list.tmpl" -> "user_list"
 // 例: "email.tmpl" -> "email"
-func ExtractTemplateName(path string) string {
+func extractTemplateName(path string) string {
 	// ベース名を取得
 	base := filepath.Base(path)
 
