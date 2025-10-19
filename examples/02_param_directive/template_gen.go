@@ -11,11 +11,13 @@ import (
 //go:embed templates/user.tmpl
 var userTplSource string
 
+var templates = map[string]*template.Template{
+	"user": template.Must(template.New("user").Option("missingkey=error").Parse(userTplSource)),
+}
+
 // Templates returns a map of all templates
 func Templates() map[string]*template.Template {
-	return map[string]*template.Template{
-		"user": template.Must(template.New("user").Option("missingkey=error").Parse(userTplSource)),
-	}
+	return templates
 }
 
 type UserItemsItem struct {
