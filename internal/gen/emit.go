@@ -165,7 +165,7 @@ func Emit(units []Unit) (string, error) {
 		funcName := "Render" + tmpl.typeName
 		write(&b, "// %s renders the %s template\n", funcName, tmpl.name)
 		write(&b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
-		write(&b, "\ttmpl, ok := Templates()[%q]\n", tmpl.name)
+		write(&b, "\ttmpl, ok := templates[%q]\n", tmpl.name)
 		write(&b, "\tif !ok {\n")
 		write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", %q)\n", tmpl.name)
 		write(&b, "\t}\n")
@@ -176,7 +176,7 @@ func Emit(units []Unit) (string, error) {
 	// 汎用Render関数
 	write(&b, "// Render renders a template by name with the given data\n")
 	write(&b, "func Render(w io.Writer, name string, data any) error {\n")
-	write(&b, "\ttmpl, ok := Templates()[name]\n")
+	write(&b, "\ttmpl, ok := templates[name]\n")
 	write(&b, "\tif !ok {\n")
 	write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", name)\n")
 	write(&b, "\t}\n")

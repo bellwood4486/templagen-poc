@@ -40,7 +40,7 @@ type User struct {
 
 // RenderUser renders the user template
 func RenderUser(w io.Writer, p User) error {
-	tmpl, ok := Templates()["user"]
+	tmpl, ok := templates["user"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "user")
 	}
@@ -49,7 +49,7 @@ func RenderUser(w io.Writer, p User) error {
 
 // Render renders a template by name with the given data
 func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := Templates()[name]
+	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}

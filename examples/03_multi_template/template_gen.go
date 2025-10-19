@@ -65,7 +65,7 @@ type Nav struct {
 
 // RenderFooter renders the footer template
 func RenderFooter(w io.Writer, p Footer) error {
-	tmpl, ok := Templates()["footer"]
+	tmpl, ok := templates["footer"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "footer")
 	}
@@ -74,7 +74,7 @@ func RenderFooter(w io.Writer, p Footer) error {
 
 // RenderHeader renders the header template
 func RenderHeader(w io.Writer, p Header) error {
-	tmpl, ok := Templates()["header"]
+	tmpl, ok := templates["header"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "header")
 	}
@@ -83,7 +83,7 @@ func RenderHeader(w io.Writer, p Header) error {
 
 // RenderNav renders the nav template
 func RenderNav(w io.Writer, p Nav) error {
-	tmpl, ok := Templates()["nav"]
+	tmpl, ok := templates["nav"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "nav")
 	}
@@ -92,7 +92,7 @@ func RenderNav(w io.Writer, p Nav) error {
 
 // Render renders a template by name with the given data
 func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := Templates()[name]
+	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
