@@ -1,0 +1,12 @@
+{{/* @param Title string */}}
+{{/* @param Subtitle *string */}}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ .Title }}</title>
+</head>
+<body>
+    <header>
+        <h1>{{ .Title }}</h1>
+        {{ if .Subtitle }}<h2>{{ .Subtitle }}</h2>{{ end }}
+    </header>

@@ -1,0 +1,13 @@
+{{/* @param Year int */}}
+{{/* @param CompanyName string */}}
+{{/* @param Links []struct{Text string; URL string} */}}
+    <footer>
+        <div class="links">
+            {{ range .Links }}
+            <a href="{{ .URL }}">{{ .Text }}</a>
+            {{ end }}
+        </div>
+        <p>&copy; {{ .Year }} {{ .CompanyName }}. All rights reserved.</p>
+    </footer>
+</body>
+</html>
