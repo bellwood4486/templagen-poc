@@ -47,7 +47,18 @@ go run .
 
 ## What's Included
 
-This example demonstrates all working `@param` patterns in a single template:
+This example demonstrates all working `@param` patterns organized across 6 focused template files:
+
+### Template Files
+
+| Template | Patterns Demonstrated |
+|----------|----------------------|
+| `basic_types.tmpl` | `string`, `int`, `int64`, `float64`, `bool`, `time.Time` |
+| `pointer_types.tmpl` | `*string`, `*int`, `*float64` (optional/nullable fields) |
+| `slice_types.tmpl` | `[]string`, `[]int`, `[]float64`, `[]bool` |
+| `map_types.tmpl` | `map[string]string`, `map[string]int`, `map[string]float64`, `map[string]bool` |
+| `struct_types.tmpl` | Nested fields using dot notation (`User.ID`, `Product.Price`) |
+| `complex_types.tmpl` | `[]struct{...}`, `*[]string`, structs with optional fields |
 
 ### ✅ Supported Patterns Demonstrated
 
@@ -84,9 +95,10 @@ go run .
 ## What Gets Generated
 
 The `go generate` command creates `template_gen.go` containing:
-- Type-safe struct definitions for all `@param` types
-- `RenderAll_types()` function for type-safe rendering
+- Type-safe struct definitions for each template (e.g., `Basic_types`, `Pointer_types`)
+- Dedicated render functions for each template (e.g., `RenderBasic_types()`, `RenderPointer_types()`)
 - Proper imports (including `time` for `time.Time`)
+- Template map with all compiled templates
 
 ## File Structure
 
@@ -97,34 +109,53 @@ The `go generate` command creates `template_gen.go` containing:
 ├── README.md           # This file
 ├── template_gen.go     # Generated code (created by go generate)
 └── templates/
-    └── all_types.tmpl  # Template with @param directives
+    ├── basic_types.tmpl     # Basic type @param directives
+    ├── pointer_types.tmpl   # Pointer/optional type @param directives
+    ├── slice_types.tmpl     # Slice type @param directives
+    ├── map_types.tmpl       # Map type @param directives
+    ├── struct_types.tmpl    # Nested struct @param directives
+    └── complex_types.tmpl   # Complex/nested @param directives
 ```
 
 ## Understanding Generated Code
+
+Each template file generates its own dedicated types and render function:
+
+| Template File | Generated Type | Render Function |
+|--------------|----------------|-----------------|
+| `basic_types.tmpl` | `Basic_types` | `RenderBasic_types()` |
+| `pointer_types.tmpl` | `Pointer_types` | `RenderPointer_types()` |
+| `slice_types.tmpl` | `Slice_types` | `RenderSlice_types()` |
+| `map_types.tmpl` | `Map_types` | `RenderMap_types()` |
+| `struct_types.tmpl` | `Struct_types` | `RenderStruct_types()` |
+| `complex_types.tmpl` | `Complex_types` | `RenderComplex_types()` |
+
+### Naming Patterns
 
 The code generator follows these naming patterns:
 
 | Pattern | Example Input | Generated Type |
 |---------|--------------|----------------|
-| Main struct | `all_types.tmpl` | `All_types` |
-| Nested field | `@param User.Name string` | `All_typesUser` struct |
-| Slice items | `@param Items []struct{...}` | `All_typesItemsItem` struct |
+| Main struct | `basic_types.tmpl` | `Basic_types` |
+| Nested field | `@param User.Name string` | `Basic_typesUser` struct |
+| Slice items | `@param Items []struct{...}` | `Basic_typesItemsItem` struct |
 
 Example:
 ```go
-// From template
+// From struct_types.tmpl
 {{/* @param User.ID int64 */}}
 {{/* @param User.Name string */}}
 
 // Generated code
-type All_typesUser struct {
-    ID   int64
-    Name string
+type Struct_typesUser struct {
+    ID    int64
+    Name  string
+    Email string
 }
 
-type All_types struct {
-    User All_typesUser
-    // ...
+type Struct_types struct {
+    User    Struct_typesUser
+    Product Struct_typesProduct
 }
 ```
 
@@ -134,6 +165,13 @@ type All_types struct {
 - See working code for all supported `@param` patterns
 - Understand how different types are generated
 - Test and experiment with type specifications
+- Reference specific type patterns quickly (organized by template file)
+
+✅ **Benefits of the modular structure:**
+- **Easy reference**: Jump directly to the type category you need
+- **Focused learning**: Study one category at a time without distractions
+- **Copy-friendly**: Easily copy specific patterns to your own projects
+- **Maintainable**: Smaller, focused files are easier to understand and update
 
 📖 **For complete documentation:**
 - Type specifications: [Main README - `@param` Directive Reference](../../README.md#param-directive-reference)

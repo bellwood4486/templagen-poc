@@ -1,0 +1,27 @@
+{{/* @param Email *string */}}
+{{/* @param PhoneNumber *string */}}
+{{/* @param MiddleScore *int */}}
+{{/* @param Discount *float64 */}}
+
+=== Pointer Types (Optional Fields) ===
+
+{{- if .Email }}
+Email: {{ .Email }}
+{{- else }}
+Email: (not provided)
+{{- end }}
+{{- if .PhoneNumber }}
+Phone: {{ .PhoneNumber }}
+{{- else }}
+Phone: (not provided)
+{{- end }}
+{{- if .MiddleScore }}
+Middle Score: {{ .MiddleScore }}
+{{- else }}
+Middle Score: (not provided)
+{{- end }}
+{{- if .Discount }}
+Discount: {{ .Discount }}%
+{{- else }}
+Discount: (not provided)
+{{- end }}
