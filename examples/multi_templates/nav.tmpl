@@ -1,0 +1,16 @@
+{{/* @param Items []struct{Name string; Link string; Active bool} */}}
+{{/* @param CurrentUser.Name string */}}
+{{/* @param CurrentUser.IsAdmin bool */}}
+<nav>
+    <ul>
+    {{ range .Items }}
+        <li{{ if .Active }} class="active"{{ end }}>
+            <a href="{{ .Link }}">{{ .Name }}</a>
+        </li>
+    {{ end }}
+    </ul>
+    <div class="user-info">
+        Logged in as: {{ .CurrentUser.Name }}
+        {{ if .CurrentUser.IsAdmin }}(Admin){{ end }}
+    </div>
+</nav>

@@ -101,7 +101,7 @@ func TestEmit_BasicScaffoldAndTypes(t *testing.T) {
 		t.Fatalf("imports io or text/template not found")
 	}
 
-	// var tplSource string
+	// var tplTplSource string (新しいフォーマット)
 	varFound := false
 	for _, d := range f.Decls {
 		gd, ok := d.(*ast.GenDecl)
@@ -110,7 +110,7 @@ func TestEmit_BasicScaffoldAndTypes(t *testing.T) {
 		}
 		for _, s := range gd.Specs {
 			vs := s.(*ast.ValueSpec)
-			if len(vs.Names) == 1 && vs.Names[0].Name == "tplSource" {
+			if len(vs.Names) == 1 && vs.Names[0].Name == "tplTplSource" {
 				if _, ok := vs.Type.(*ast.Ident); ok {
 					varFound = true
 					break
@@ -119,64 +119,68 @@ func TestEmit_BasicScaffoldAndTypes(t *testing.T) {
 		}
 	}
 	if !varFound {
-		t.Fatalf("var tplSource string not found")
+		t.Fatalf("var tplTplSource string not found")
 	}
 
-	// type User struct{ Name string }
-	user := findType(f, "User")
+	// type TplUser struct{ Name string } (新しいフォーマット)
+	user := findType(f, "TplUser")
 	if user == nil || user.Fields == nil || len(user.Fields.List) == 0 {
-		t.Fatalf("type User struct not found or empty")
+		t.Fatalf("type TplUser struct not found or empty")
 	}
 	if len(user.Fields.List) != 1 || len(user.Fields.List[0].Names) != 1 || user.Fields.List[0].Names[0].Name != "Name" {
-		t.Fatalf("User fields unexpected")
+		t.Fatalf("TplUser fields unexpected")
 	}
 	if id, ok := user.Fields.List[0].Type.(*ast.Ident); !ok || id.Name != "string" {
-		t.Fatalf("User.Name type != string")
+		t.Fatalf("TplUser.Name type != string")
 	}
 
-	// type Params { Message string; User User } with sorted order
-	params := findType(f, "Params")
+	// type Tpl { Message string; User TplUser } with sorted order (新しいフォーマット)
+	params := findType(f, "Tpl")
 	if params == nil || params.Fields == nil || len(params.Fields.List) != 2 {
-		t.Fatalf("Params fields unexpected")
+		t.Fatalf("Tpl fields unexpected")
 	}
 	if params.Fields.List[0].Names[0].Name != "Message" {
-		t.Fatalf("Params first field = %s; want Message", params.Fields.List[0].Names[0].Name)
+		t.Fatalf("Tpl first field = %s; want Message", params.Fields.List[0].Names[0].Name)
 	}
 	if id, ok := params.Fields.List[0].Type.(*ast.Ident); !ok || id.Name != "string" {
-		t.Fatalf("Params.Message type != string")
+		t.Fatalf("Tpl.Message type != string")
 	}
 	if params.Fields.List[1].Names[0].Name != "User" {
-		t.Fatalf("Params second field = %s; want User", params.Fields.List[1].Names[0].Name)
+		t.Fatalf("Tpl second field = %s; want User", params.Fields.List[1].Names[0].Name)
 	}
-	if id, ok := params.Fields.List[1].Type.(*ast.Ident); !ok || id.Name != "User" {
-		t.Fatalf("Params.User type != User")
+	if id, ok := params.Fields.List[1].Type.(*ast.Ident); !ok || id.Name != "TplUser" {
+		t.Fatalf("Tpl.User type != TplUser")
 	}
 
-	// Render and RenderAny signatures
-	render := findFunc(f, "Render")
-	if render == nil || render.Type == nil || render.Type.Params == nil || render.Type.Results == nil {
-		t.Fatalf("Render signature not found")
+	// RenderTpl and Render signatures (新しいフォーマット)
+	renderTpl := findFunc(f, "RenderTpl")
+	if renderTpl == nil || renderTpl.Type == nil || renderTpl.Type.Params == nil || renderTpl.Type.Results == nil {
+		t.Fatalf("RenderTpl signature not found")
 	}
-	if len(render.Type.Params.List) != 2 || len(render.Type.Results.List) != 1 {
-		t.Fatalf("Render parameters/results unexpected")
+	if len(renderTpl.Type.Params.List) != 2 || len(renderTpl.Type.Results.List) != 1 {
+		t.Fatalf("RenderTpl parameters/results unexpected")
 	}
 	// w io.Writer
-	if se, ok := render.Type.Params.List[0].Type.(*ast.SelectorExpr); !ok || se.Sel.Name != "Writer" {
-		t.Fatalf("Render first param not io.Writer")
+	if se, ok := renderTpl.Type.Params.List[0].Type.(*ast.SelectorExpr); !ok || se.Sel.Name != "Writer" {
+		t.Fatalf("RenderTpl first param not io.Writer")
 	}
-	if id, ok := render.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "Params" {
-		t.Fatalf("Render second param not Params")
+	if id, ok := renderTpl.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "Tpl" {
+		t.Fatalf("RenderTpl second param not Tpl")
 	}
-	if id, ok := render.Type.Results.List[0].Type.(*ast.Ident); !ok || id.Name != "error" {
-		t.Fatalf("Render result not error")
+	if id, ok := renderTpl.Type.Results.List[0].Type.(*ast.Ident); !ok || id.Name != "error" {
+		t.Fatalf("RenderTpl result not error")
 	}
 
-	renderAny := findFunc(f, "RenderAny")
-	if renderAny == nil || len(renderAny.Type.Params.List) != 2 {
-		t.Fatalf("RenderAny signature not found")
+	// 汎用Render関数: Render(w io.Writer, name string, data any) error
+	render := findFunc(f, "Render")
+	if render == nil || len(render.Type.Params.List) != 3 {
+		t.Fatalf("Render signature not found")
 	}
-	if id, ok := renderAny.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "any" {
-		t.Fatalf("RenderAny second param not any")
+	if id, ok := render.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "string" {
+		t.Fatalf("Render second param not string")
+	}
+	if id, ok := render.Type.Params.List[2].Type.(*ast.Ident); !ok || id.Name != "any" {
+		t.Fatalf("Render third param not any")
 	}
 }
 
@@ -192,40 +196,40 @@ func TestEmit_RangeAndIndex_TypesAndOrder(t *testing.T) {
 	}
 	f := parseCode(t, code)
 
-	// type ItemsItem with fields Title, ID (order sorted)
-	it := findType(f, "ItemsItem")
+	// type EmailItemsItem with fields Title, ID (order sorted) - 新しいフォーマット
+	it := findType(f, "EmailItemsItem")
 	if it == nil || it.Fields == nil || len(it.Fields.List) != 2 {
-		t.Fatalf("ItemsItem struct unexpected")
+		t.Fatalf("EmailItemsItem struct unexpected")
 	}
 	if it.Fields.List[0].Names[0].Name != "ID" || it.Fields.List[1].Names[0].Name != "Title" {
-		t.Fatalf("ItemsItem fields not sorted as expected: got %s, %s", it.Fields.List[0].Names[0].Name, it.Fields.List[1].Names[0].Name)
+		t.Fatalf("EmailItemsItem fields not sorted as expected: got %s, %s", it.Fields.List[0].Names[0].Name, it.Fields.List[1].Names[0].Name)
 	}
 
-	params := findType(f, "Params")
+	params := findType(f, "Email")  // 新しいフォーマット
 	if params == nil || len(params.Fields.List) != 2 {
-		t.Fatalf("Params unexpected")
+		t.Fatalf("Email unexpected")
 	}
 	if params.Fields.List[0].Names[0].Name != "Items" {
-		t.Fatalf("Params first field = %s; want Items", params.Fields.List[0].Names[0].Name)
+		t.Fatalf("Email first field = %s; want Items", params.Fields.List[0].Names[0].Name)
 	}
 	if at, ok := params.Fields.List[0].Type.(*ast.ArrayType); !ok {
-		t.Fatalf("Params.Items not a slice")
+		t.Fatalf("Email.Items not a slice")
 	} else {
-		if id, ok := at.Elt.(*ast.Ident); !ok || id.Name != "ItemsItem" {
-			t.Fatalf("Params.Items element not ItemsItem")
+		if id, ok := at.Elt.(*ast.Ident); !ok || id.Name != "EmailItemsItem" {
+			t.Fatalf("Email.Items element not EmailItemsItem")
 		}
 	}
 	if params.Fields.List[1].Names[0].Name != "Meta" {
-		t.Fatalf("Params second field = %s; want Meta", params.Fields.List[1].Names[0].Name)
+		t.Fatalf("Email second field = %s; want Meta", params.Fields.List[1].Names[0].Name)
 	}
 	if mt, ok := params.Fields.List[1].Type.(*ast.MapType); !ok {
-		t.Fatalf("Params.Meta not a map")
+		t.Fatalf("Email.Meta not a map")
 	} else {
 		if k, ok := mt.Key.(*ast.Ident); !ok || k.Name != "string" {
-			t.Fatalf("Params.Meta key not string")
+			t.Fatalf("Email.Meta key not string")
 		}
 		if v, ok := mt.Value.(*ast.Ident); !ok || v.Name != "string" {
-			t.Fatalf("Params.Meta value not string")
+			t.Fatalf("Email.Meta value not string")
 		}
 	}
 }
@@ -303,10 +307,10 @@ func TestEmit_WithParamOverride_BasicTypes(t *testing.T) {
 
 	f := parseCode(t, code)
 
-	// Check User struct has Age int and Email *string
-	user := findType(f, "User")
+	// Check TplUser struct has Age int and Email *string (新しいフォーマット)
+	user := findType(f, "TplUser")
 	if user == nil {
-		t.Fatal("User type not found")
+		t.Fatal("TplUser type not found")
 	}
 
 	foundAge := false
@@ -356,10 +360,10 @@ func TestEmit_WithParamOverride_SliceType(t *testing.T) {
 
 	f := parseCode(t, code)
 
-	// Check ItemsItem has ID int64 and Title string
-	item := findType(f, "ItemsItem")
+	// Check TplItemsItem has ID int64 and Title string (新しいフォーマット)
+	item := findType(f, "TplItemsItem")
 	if item == nil {
-		t.Fatal("ItemsItem type not found")
+		t.Fatal("TplItemsItem type not found")
 	}
 
 	foundID := false
@@ -382,10 +386,10 @@ func TestEmit_WithParamOverride_SliceType(t *testing.T) {
 	}
 
 	if !foundID {
-		t.Error("ItemsItem.ID int64 not found")
+		t.Error("TplItemsItem.ID int64 not found")
 	}
 	if !foundTitle {
-		t.Error("ItemsItem.Title string not found")
+		t.Error("TplItemsItem.Title string not found")
 	}
 }
 
@@ -412,10 +416,10 @@ Created: {{ .CreatedAt }}
 		t.Error("import time not found")
 	}
 
-	// Check Params has CreatedAt time.Time
-	params := findType(f, "Params")
+	// Check Tpl has CreatedAt time.Time (新しいフォーマット)
+	params := findType(f, "Tpl")
 	if params == nil {
-		t.Fatal("Params type not found")
+		t.Fatal("Tpl type not found")
 	}
 
 	foundCreatedAt := false
@@ -433,6 +437,6 @@ Created: {{ .CreatedAt }}
 	}
 
 	if !foundCreatedAt {
-		t.Error("Params.CreatedAt time.Time not found")
+		t.Error("Tpl.CreatedAt time.Time not found")
 	}
 }

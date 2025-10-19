@@ -3,26 +3,45 @@ package mailtpl
 
 import (
 	_ "embed"
+	"fmt"
 	"io"
 	"text/template"
 )
 
 //go:embed email.tmpl
-var tplSource string
+var emailTplSource string
 
-func Template() *template.Template {
-	return template.Must(template.New("tpl").Option("missingkey=error").Parse(tplSource))
+// Templates returns a map of all templates
+func Templates() map[string]*template.Template {
+	return map[string]*template.Template{
+		"email": template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+	}
 }
 
-type User struct {
+type EmailUser struct {
 	Name string
 }
 
-type Params struct {
+// Email represents parameters for email template
+type Email struct {
 	Message string
-	User User
+	User EmailUser
 }
 
-func Render(w io.Writer, p Params) error { return Template().Execute(w, p) }
+// RenderEmail renders the email template
+func RenderEmail(w io.Writer, p Email) error {
+	tmpl, ok := Templates()["email"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "email")
+	}
+	return tmpl.Execute(w, p)
+}
 
-func RenderAny(w io.Writer, data any) error { return Template().Execute(w, data) }
+// Render renders a template by name with the given data
+func Render(w io.Writer, name string, data any) error {
+	tmpl, ok := Templates()[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return tmpl.Execute(w, data)
+}
