@@ -59,8 +59,8 @@ func main() {
 		})
 	}
 
-	// コード生成（常にEmitMultiを使用）
-	code, err := gen.EmitMulti(units)
+	// コード生成
+	code, err := gen.Emit(units)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to emit: %w", err))
 		os.Exit(1)
