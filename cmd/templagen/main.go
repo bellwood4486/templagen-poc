@@ -55,7 +55,6 @@ func main() {
 			Pkg:           *pkg,
 			SourcePath:    relPath,
 			SourceLiteral: string(src),
-			TemplateName:  gen.ExtractTemplateName(file),
 		})
 	}
 

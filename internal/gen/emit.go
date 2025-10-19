@@ -15,9 +15,8 @@ import (
 // Unit は単一のテンプレート処理単位
 type Unit struct {
 	Pkg           string // 出力パッケージ名
-	SourcePath    string // 埋め込むテンプレファイルのパス
+	SourcePath    string // 埋め込むテンプレファイルのパス（go:embedディレクティブで使用）
 	SourceLiteral string // テンプレ本文
-	TemplateName  string // テンプレート名（複数ファイル対応用）
 }
 
 // Emit は複数のテンプレートから1つの統合Goファイルを生成する
