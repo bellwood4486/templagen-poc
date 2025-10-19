@@ -108,15 +108,18 @@ func Emit(units []Unit) (string, error) {
 		write(&b, "var %s string\n\n", tmpl.varName)
 	}
 
-	// Templates()マップ関数
-	write(&b, "// Templates returns a map of all templates\n")
-	write(&b, "func Templates() map[string]*template.Template {\n")
-	write(&b, "\treturn map[string]*template.Template{\n")
+	// Templates map - initialized once at package initialization
+	write(&b, "var templates = map[string]*template.Template{\n")
 	for _, tmpl := range templates {
-		write(&b, "\t\t%q: template.Must(template.New(%q).Option(%q).Parse(%s)),\n",
+		write(&b, "\t%q: template.Must(template.New(%q).Option(%q).Parse(%s)),\n",
 			tmpl.name, tmpl.name, "missingkey=error", tmpl.varName)
 	}
-	write(&b, "\t}\n")
+	write(&b, "}\n\n")
+
+	// Templates() function - returns the pre-initialized map
+	write(&b, "// Templates returns a map of all templates\n")
+	write(&b, "func Templates() map[string]*template.Template {\n")
+	write(&b, "\treturn templates\n")
 	write(&b, "}\n\n")
 
 	// 各テンプレート用の名前付き型を生成

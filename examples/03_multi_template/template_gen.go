@@ -17,13 +17,15 @@ var headerTplSource string
 //go:embed templates/nav.tmpl
 var navTplSource string
 
+var templates = map[string]*template.Template{
+	"footer": template.Must(template.New("footer").Option("missingkey=error").Parse(footerTplSource)),
+	"header": template.Must(template.New("header").Option("missingkey=error").Parse(headerTplSource)),
+	"nav": template.Must(template.New("nav").Option("missingkey=error").Parse(navTplSource)),
+}
+
 // Templates returns a map of all templates
 func Templates() map[string]*template.Template {
-	return map[string]*template.Template{
-		"footer": template.Must(template.New("footer").Option("missingkey=error").Parse(footerTplSource)),
-		"header": template.Must(template.New("header").Option("missingkey=error").Parse(headerTplSource)),
-		"nav": template.Must(template.New("nav").Option("missingkey=error").Parse(navTplSource)),
-	}
+	return templates
 }
 
 type FooterLinksItem struct {

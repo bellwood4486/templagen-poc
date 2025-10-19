@@ -11,11 +11,13 @@ import (
 //go:embed templates/email.tmpl
 var emailTplSource string
 
+var templates = map[string]*template.Template{
+	"email": template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+}
+
 // Templates returns a map of all templates
 func Templates() map[string]*template.Template {
-	return map[string]*template.Template{
-		"email": template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
-	}
+	return templates
 }
 
 type EmailUser struct {
