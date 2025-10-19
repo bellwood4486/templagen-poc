@@ -3,3 +3,6 @@
 *.exe
 *.exe~
 .idea
+
+# ignore example binaries
+examples/*/[0-9]*_*
