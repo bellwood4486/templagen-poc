@@ -160,6 +160,93 @@ func RenderEmail(w io.Writer, params Email) error { ... }
 func Render(w io.Writer, name string, params map[string]any) error { ... }
 ```
 
+## Supported Template Syntax
+
+`templagen` supports the following Go template syntax patterns. The template scanner analyzes these patterns to infer types automatically:
+
+### 1. Basic Field Reference
+
+```go
+{{ .Title }}
+```
+
+Creates a `string` field in the generated struct.
+
+### 2. Nested Field Reference
+
+```go
+{{ .User.Name }}
+{{ .Author.Email }}
+```
+
+Creates nested struct types with `string` fields.
+
+### 3. Conditional Statements (if)
+
+```go
+{{ if .Status }}
+  <p>Status: {{ .Status }}</p>
+{{ end }}
+```
+
+The field in the condition is inferred as a struct if it has child fields, otherwise as `string`.
+
+### 4. With Statement and Else Clause
+
+```go
+{{ with .Summary }}
+  <p>{{ .Content }}</p>
+{{ else }}
+  <p>{{ .DefaultMessage }}</p>
+{{ end }}
+```
+
+Changes the dot (`.`) context within the block. The scanner tracks scope changes correctly.
+
+### 5. Range Over Slice
+
+```go
+{{ range .Items }}
+  <li>{{ .Title }} - {{ .ID }}</li>
+{{ end }}
+```
+
+Infers `.Items` as a slice type `[]struct{...}` with fields from the range body.
+
+### 6. Map Access with Index Function
+
+```go
+{{ index .Meta "key" }}
+{{ index .Meta "env" }}
+```
+
+Infers `.Meta` as `map[string]string` when using the `index` function.
+
+### 7. Nested Structures (with + range)
+
+```go
+{{ with .Project }}
+  <h3>{{ .Name }}</h3>
+  {{ range .Tasks }}
+    <p>{{ .Title }}</p>
+  {{ end }}
+{{ end }}
+```
+
+Combines `with` and `range` to create nested struct hierarchies with slice fields.
+
+### 8. Deep Nested Paths
+
+```go
+{{ .Company.Department.Team.Manager.Name }}
+```
+
+Creates deeply nested struct types following the full path.
+
+### Complete Example
+
+See [`examples/04_comprehensive_template`](./examples/04_comprehensive_template) for a complete template demonstrating all supported syntax patterns.
+
 ## Examples
 
 Check the [`examples/`](./examples) directory for complete working examples:
@@ -167,6 +254,7 @@ Check the [`examples/`](./examples) directory for complete working examples:
 - [`01_basic`](./examples/01_basic): Basic usage with type inference
 - [`02_param_directive`](./examples/02_param_directive): Using `@param` directives for complex types
 - [`03_multi_template`](./examples/03_multi_template): Processing multiple templates at once
+- [`04_comprehensive_template`](./examples/04_comprehensive_template): Comprehensive example demonstrating all supported template syntax patterns
 
 Run examples:
 
