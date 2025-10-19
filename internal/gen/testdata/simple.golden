@@ -32,7 +32,7 @@ type Tpl struct {
 
 // RenderTpl renders the tpl template
 func RenderTpl(w io.Writer, p Tpl) error {
-	tmpl, ok := Templates()["tpl"]
+	tmpl, ok := templates["tpl"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "tpl")
 	}
@@ -41,7 +41,7 @@ func RenderTpl(w io.Writer, p Tpl) error {
 
 // Render renders a template by name with the given data
 func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := Templates()[name]
+	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}

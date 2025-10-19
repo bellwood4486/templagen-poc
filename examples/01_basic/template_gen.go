@@ -32,7 +32,7 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-	tmpl, ok := Templates()["email"]
+	tmpl, ok := templates["email"]
 	if !ok {
 		return fmt.Errorf("template %q not found", "email")
 	}
@@ -41,7 +41,7 @@ func RenderEmail(w io.Writer, p Email) error {
 
 // Render renders a template by name with the given data
 func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := Templates()[name]
+	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
