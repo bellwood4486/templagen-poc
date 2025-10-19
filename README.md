@@ -110,6 +110,163 @@ Or specify files explicitly:
 //go:generate templagen -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
 ```
 
+## `@param` Directive Reference
+
+The `@param` directive allows you to explicitly specify types for template parameters, overriding automatic type inference. This is essential for complex types like specific integer sizes, optional fields (pointers), and structured data.
+
+### Syntax
+
+```go
+{{/* @param <FieldPath> <Type> */}}
+```
+
+- `<FieldPath>`: Dot-separated field path (e.g., `User.Name`, `Items`, `Config.Database.Host`)
+- `<Type>`: Go type expression (see supported types below)
+
+### Supported Types
+
+#### ✅ Fully Supported
+
+**1. Basic Types**
+```go
+{{/* @param Name string */}}
+{{/* @param Age int */}}
+{{/* @param Count int64 */}}
+{{/* @param Price float64 */}}
+{{/* @param Active bool */}}
+{{/* @param CreatedAt time.Time */}}  // Automatically imports "time"
+```
+
+Supported base types: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`, `time.Time`
+
+**2. Pointer Types (Optional/Nullable)**
+```go
+{{/* @param Email *string */}}
+{{/* @param Score *int */}}
+{{/* @param Discount *float64 */}}
+```
+
+Any base type can be wrapped with `*` to make it optional.
+
+**3. Slices**
+```go
+{{/* @param Tags []string */}}
+{{/* @param IDs []int */}}
+{{/* @param Prices []float64 */}}
+```
+
+**4. Maps**
+```go
+{{/* @param Metadata map[string]string */}}
+{{/* @param Counters map[string]int */}}
+{{/* @param Settings map[string]bool */}}
+```
+
+**Note:** Map keys must always be `string`. Other key types are not supported.
+
+**5. Nested Struct Fields (Dot Notation)**
+```go
+{{/* @param User.ID int64 */}}
+{{/* @param User.Name string */}}
+{{/* @param User.Email string */}}
+
+{{/* @param Config.Database.Host string */}}
+{{/* @param Config.Database.Port int */}}
+```
+
+Generates nested struct types:
+```go
+type All_typesUser struct {
+    ID    int64
+    Name  string
+    Email string
+}
+```
+
+**6. Slice of Structs**
+```go
+{{/* @param Items []struct{ID int64; Title string; Price float64} */}}
+{{/* @param Records []struct{Name string; Tags []string; Score *int} */}}
+```
+
+Struct fields are separated by semicolons (`;`). Can include nested slices/maps within struct fields.
+
+**7. Optional Slices**
+```go
+{{/* @param OptionalTags *[]string */}}
+```
+
+#### ❌ Known Limitations
+
+**1. Nested Slices/Maps**
+```go
+// ❌ Does NOT work - generates invalid syntax
+{{/* @param Matrix [][]string */}}
+{{/* @param Groups map[string][]string */}}
+{{/* @param Data []map[string]int */}}
+```
+
+**Workaround:** Use slice of structs:
+```go
+// ✅ Works
+{{/* @param Groups []struct{Key string; Values []string} */}}
+```
+
+**2. Inline Struct Definitions at Top Level**
+```go
+// ❌ Does NOT work - generates invalid Go code
+{{/* @param User struct{ID int64; Name string} */}}
+```
+
+**Workaround:** Use dot notation:
+```go
+// ✅ Works
+{{/* @param User.ID int64 */}}
+{{/* @param User.Name string */}}
+```
+
+**3. Deeply Nested Paths with Inline Structs**
+```go
+// ❌ Does NOT work - generates type names with dots
+{{/* @param Complex.Nested.User struct{ID int64; Name string} */}}
+```
+
+**Workaround:** Flatten the structure or use simpler field paths.
+
+**4. Non-String Map Keys**
+```go
+// ❌ Not supported
+{{/* @param Lookup map[int]string */}}
+```
+
+**5. Struct Field Syntax**
+```go
+// ❌ Wrong - commas not allowed
+{{/* @param Item struct{Name string, ID int} */}}
+
+// ✅ Correct - use semicolons
+{{/* @param Item struct{Name string; ID int} */}}
+```
+
+### Best Practices
+
+✅ **DO:**
+- Use dot notation for nested structures: `User.Name`, `Config.Database.Host`
+- Use `[]struct{...}` for collections of complex data
+- Use pointer types (`*Type`) for optional fields
+- Keep field paths relatively flat (1-2 levels deep)
+- Use semicolons to separate struct fields
+
+❌ **DON'T:**
+- Don't use inline `struct{...}` at the top level
+- Don't nest slices/maps directly (`[][]T`, `map[K][]V`)
+- Don't combine deep field paths with inline struct definitions
+- Don't use commas in struct field definitions
+
+### Complete Example
+
+See [`examples/05_all_param_types`](./examples/05_all_param_types) for a comprehensive example demonstrating all supported type patterns and limitations.
+
 ## Command Line Options
 
 ```
@@ -255,6 +412,7 @@ Check the [`examples/`](./examples) directory for complete working examples:
 - [`02_param_directive`](./examples/02_param_directive): Using `@param` directives for complex types
 - [`03_multi_template`](./examples/03_multi_template): Processing multiple templates at once
 - [`04_comprehensive_template`](./examples/04_comprehensive_template): Comprehensive example demonstrating all supported template syntax patterns
+- [`05_all_param_types`](./examples/05_all_param_types): Complete reference for all supported `@param` types and limitations
 
 Run examples:
 
