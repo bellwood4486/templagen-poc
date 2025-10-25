@@ -10,7 +10,6 @@ import (
 type TypeResolver struct {
 	overrides    map[string]string      // パス -> Go型文字列 (例: "User.Age" -> "int")
 	structFields map[string]map[string]string  // パス -> 構造体型のフィールド定義
-	imports      map[string]struct{}
 }
 
 // NewTypeResolver はテンプレートソースからTypeResolverを作成する
@@ -23,7 +22,6 @@ func NewTypeResolver(src string) (*TypeResolver, error) {
 	resolver := &TypeResolver{
 		overrides:    make(map[string]string),
 		structFields: make(map[string]map[string]string),
-		imports:      make(map[string]struct{}),
 	}
 
 	for _, dir := range directives {
@@ -43,8 +41,6 @@ func NewTypeResolver(src string) (*TypeResolver, error) {
 			typeStr := resolver.typeExprToString(dir.Type)
 			resolver.overrides[dir.Path] = typeStr
 		}
-
-		resolver.collectImportsFromExpr(&dir.Type)
 	}
 
 	return resolver, nil
@@ -55,15 +51,6 @@ func (r *TypeResolver) GetType(path []string) (string, bool) {
 	key := strings.Join(path, ".")
 	typ, ok := r.overrides[key]
 	return typ, ok
-}
-
-// RequiredImports は型オーバーライドに必要なインポートのリストを返す
-func (r *TypeResolver) RequiredImports() []string {
-	var result []string
-	for imp := range r.imports {
-		result = append(result, imp)
-	}
-	return result
 }
 
 // GetAllOverrides はすべての型オーバーライドを返す
@@ -109,22 +96,3 @@ func (r *TypeResolver) typeExprToString(expr TypeExpr) string {
 	}
 }
 
-// collectImportsFromExpr はTypeExprから必要なインポートを収集する
-func (r *TypeResolver) collectImportsFromExpr(expr *TypeExpr) {
-	if expr == nil {
-		return
-	}
-
-	switch expr.Kind {
-	case TypeKindBase:
-		if expr.BaseType == "time.Time" {
-			r.imports["time"] = struct{}{}
-		}
-	case TypeKindSlice, TypeKindMap, TypeKindPointer:
-		r.collectImportsFromExpr(expr.Elem)
-	case TypeKindStruct:
-		for _, f := range expr.Fields {
-			r.collectImportsFromExpr(&f.Type)
-		}
-	}
-}

@@ -140,10 +140,9 @@ func main() {
 {{/* @param Count int64 */}}
 {{/* @param Price float64 */}}
 {{/* @param Active bool */}}
-{{/* @param CreatedAt time.Time */}}  // 自動的に "time" をインポート
 ```
 
-サポートされる基本型: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`, `time.Time`
+サポートされる基本型: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`
 
 **2. ポインタ型（オプショナル/Null許可）**
 ```go
@@ -706,10 +705,9 @@ The `@param` directive allows you to explicitly specify types for template param
 {{/* @param Count int64 */}}
 {{/* @param Price float64 */}}
 {{/* @param Active bool */}}
-{{/* @param CreatedAt time.Time */}}  // Automatically imports "time"
 ```
 
-Supported base types: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`, `time.Time`
+Supported base types: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`
 
 **2. Pointer Types (Optional/Nullable)**
 ```go

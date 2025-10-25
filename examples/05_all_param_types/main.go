@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"time"
 )
 
 func main() {
@@ -19,12 +18,11 @@ func main() {
 	fmt.Println("--- 1. Basic Types ---")
 	var buf1 bytes.Buffer
 	_ = RenderBasic_types(&buf1, Basic_types{
-		Name:      "John Doe",
-		Age:       30,
-		Score:     98765,
-		Price:     99.99,
-		Active:    true,
-		CreatedAt: time.Date(2024, 10, 19, 15, 30, 0, 0, time.UTC),
+		Name:   "John Doe",
+		Age:    30,
+		Score:  98765,
+		Price:  99.99,
+		Active: true,
 	})
 	fmt.Print(buf1.String())
 	fmt.Println()
