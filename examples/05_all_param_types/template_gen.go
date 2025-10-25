@@ -47,13 +47,17 @@ var slice_typesTplSource string
 //go:embed templates/struct_types.tmpl
 var struct_typesTplSource string
 
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 var templates = map[TemplateName]*template.Template{
-	Template.Basic_types: template.Must(template.New(string(Template.Basic_types)).Option("missingkey=error").Parse(basic_typesTplSource)),
-	Template.Complex_types: template.Must(template.New(string(Template.Complex_types)).Option("missingkey=error").Parse(complex_typesTplSource)),
-	Template.Map_types: template.Must(template.New(string(Template.Map_types)).Option("missingkey=error").Parse(map_typesTplSource)),
-	Template.Pointer_types: template.Must(template.New(string(Template.Pointer_types)).Option("missingkey=error").Parse(pointer_typesTplSource)),
-	Template.Slice_types: template.Must(template.New(string(Template.Slice_types)).Option("missingkey=error").Parse(slice_typesTplSource)),
-	Template.Struct_types: template.Must(template.New(string(Template.Struct_types)).Option("missingkey=error").Parse(struct_typesTplSource)),
+	Template.Basic_types: newTemplate(Template.Basic_types, basic_typesTplSource),
+	Template.Complex_types: newTemplate(Template.Complex_types, complex_typesTplSource),
+	Template.Map_types: newTemplate(Template.Map_types, map_typesTplSource),
+	Template.Pointer_types: newTemplate(Template.Pointer_types, pointer_typesTplSource),
+	Template.Slice_types: newTemplate(Template.Slice_types, slice_typesTplSource),
+	Template.Struct_types: newTemplate(Template.Struct_types, struct_typesTplSource),
 }
 
 // Templates returns a map of all templates

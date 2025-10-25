@@ -21,8 +21,12 @@ var Template = struct {
 //go:embed templates/user.tmpl
 var userTplSource string
 
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 var templates = map[TemplateName]*template.Template{
-	Template.User: template.Must(template.New(string(Template.User)).Option("missingkey=error").Parse(userTplSource)),
+	Template.User: newTemplate(Template.User, userTplSource),
 }
 
 // Templates returns a map of all templates

@@ -36,11 +36,15 @@ var collectionsTplSource string
 //go:embed templates/control_flow.tmpl
 var control_flowTplSource string
 
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 var templates = map[TemplateName]*template.Template{
-	Template.Advanced: template.Must(template.New(string(Template.Advanced)).Option("missingkey=error").Parse(advancedTplSource)),
-	Template.Basic_fields: template.Must(template.New(string(Template.Basic_fields)).Option("missingkey=error").Parse(basic_fieldsTplSource)),
-	Template.Collections: template.Must(template.New(string(Template.Collections)).Option("missingkey=error").Parse(collectionsTplSource)),
-	Template.Control_flow: template.Must(template.New(string(Template.Control_flow)).Option("missingkey=error").Parse(control_flowTplSource)),
+	Template.Advanced: newTemplate(Template.Advanced, advancedTplSource),
+	Template.Basic_fields: newTemplate(Template.Basic_fields, basic_fieldsTplSource),
+	Template.Collections: newTemplate(Template.Collections, collectionsTplSource),
+	Template.Control_flow: newTemplate(Template.Control_flow, control_flowTplSource),
 }
 
 // Templates returns a map of all templates

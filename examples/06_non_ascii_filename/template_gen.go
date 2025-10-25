@@ -21,8 +21,12 @@ var Template = struct {
 //go:embed templates/メール.tmpl
 var メールTplSource string
 
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 var templates = map[TemplateName]*template.Template{
-	Template.メール: template.Must(template.New(string(Template.メール)).Option("missingkey=error").Parse(メールTplSource)),
+	Template.メール: newTemplate(Template.メール, メールTplSource),
 }
 
 // Templates returns a map of all templates

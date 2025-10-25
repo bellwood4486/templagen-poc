@@ -122,12 +122,17 @@ func Emit(units []Unit) (string, error) {
 		write(&b, "var %s string\n\n", tmpl.varName)
 	}
 
+	// Helper function for template initialization
+	write(&b, "func newTemplate(name TemplateName, source string) *template.Template {\n")
+	write(&b, "\treturn template.Must(template.New(string(name)).Option(%q).Parse(source))\n", "missingkey=error")
+	write(&b, "}\n\n")
+
 	// Templates map - initialized once at package initialization
 	write(&b, "var templates = map[TemplateName]*template.Template{\n")
 	for _, tmpl := range templates {
 		fieldRef := "Template." + tmpl.typeName
-		write(&b, "\t%s: template.Must(template.New(string(%s)).Option(%q).Parse(%s)),\n",
-			fieldRef, fieldRef, "missingkey=error", tmpl.varName)
+		write(&b, "\t%s: newTemplate(%s, %s),\n",
+			fieldRef, fieldRef, tmpl.varName)
 	}
 	write(&b, "}\n\n")
 

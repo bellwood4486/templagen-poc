@@ -31,10 +31,14 @@ var headerTplSource string
 //go:embed templates/nav.tmpl
 var navTplSource string
 
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 var templates = map[TemplateName]*template.Template{
-	Template.Footer: template.Must(template.New(string(Template.Footer)).Option("missingkey=error").Parse(footerTplSource)),
-	Template.Header: template.Must(template.New(string(Template.Header)).Option("missingkey=error").Parse(headerTplSource)),
-	Template.Nav: template.Must(template.New(string(Template.Nav)).Option("missingkey=error").Parse(navTplSource)),
+	Template.Footer: newTemplate(Template.Footer, footerTplSource),
+	Template.Header: newTemplate(Template.Header, headerTplSource),
+	Template.Nav: newTemplate(Template.Nav, navTplSource),
 }
 
 // Templates returns a map of all templates
