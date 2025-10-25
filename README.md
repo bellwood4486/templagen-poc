@@ -321,22 +321,30 @@ import (
     "text/template"
 )
 
+// 型安全なテンプレート名型
+type TemplateName string
+
+// テンプレート名定数
+const (
+    TemplateNameEmail TemplateName = "email"
+)
+
 // テンプレートファイルの埋め込み
 //go:embed templates/email.tmpl
 var emailTplSource string
 
 // すべてのテンプレートのマップ
-var templates = map[string]*template.Template{
-    "email": template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+var templates = map[TemplateName]*template.Template{
+    TemplateNameEmail: template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
 }
 
 // テンプレートマップを返す関数
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
     return templates
 }
 
 // 汎用描画関数（動的使用向け）
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
     tmpl, ok := templates[name]
     if !ok {
         return fmt.Errorf("template %q not found", name)
@@ -366,9 +374,9 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-    tmpl, ok := templates["email"]
+    tmpl, ok := templates[TemplateNameEmail]
     if !ok {
-        return fmt.Errorf("template %q not found", "email")
+        return fmt.Errorf("template %q not found", TemplateNameEmail)
     }
     return tmpl.Execute(w, p)
 }
@@ -872,22 +880,30 @@ import (
     "text/template"
 )
 
+// Type-safe template name type
+type TemplateName string
+
+// Template name constants
+const (
+    TemplateNameEmail TemplateName = "email"
+)
+
 // Template file embedding
 //go:embed templates/email.tmpl
 var emailTplSource string
 
 // Map of all templates
-var templates = map[string]*template.Template{
-    "email": template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+var templates = map[TemplateName]*template.Template{
+    TemplateNameEmail: template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
 }
 
 // Function returning the templates map
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
     return templates
 }
 
 // Generic render function (for dynamic use)
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
     tmpl, ok := templates[name]
     if !ok {
         return fmt.Errorf("template %q not found", name)
@@ -917,9 +933,9 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-    tmpl, ok := templates["email"]
+    tmpl, ok := templates[TemplateNameEmail]
     if !ok {
-        return fmt.Errorf("template %q not found", "email")
+        return fmt.Errorf("template %q not found", TemplateNameEmail)
     }
     return tmpl.Execute(w, p)
 }
