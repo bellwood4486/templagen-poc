@@ -6,8 +6,6 @@ type TypedSchema struct {
 	Fields map[string]*TypedField
 	// 生成すべき名前付き型のリスト（例: ItemsItem）
 	NamedTypes []*NamedType
-	// 必要なimport
-	RequiredImports []string
 }
 
 // TypedField represents a field with resolved type

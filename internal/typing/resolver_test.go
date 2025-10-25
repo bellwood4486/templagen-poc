@@ -228,10 +228,6 @@ func TestResolve_WithoutParams(t *testing.T) {
 	if typed.Fields["Name"].GoType != "string" {
 		t.Errorf("Name.GoType = %q, want %q", typed.Fields["Name"].GoType, "string")
 	}
-
-	if len(typed.RequiredImports) != 0 {
-		t.Errorf("expected no imports, got %d", len(typed.RequiredImports))
-	}
 }
 
 func TestResolve_WithParamOverride(t *testing.T) {

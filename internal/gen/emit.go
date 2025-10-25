@@ -63,11 +63,6 @@ func Emit(units []Unit) (string, error) {
 			return "", fmt.Errorf("failed to resolve types for %s: %w", unit.SourcePath, err)
 		}
 
-		// 必要なimportを収集
-		for _, imp := range typed.RequiredImports {
-			allImports[imp] = struct{}{}
-		}
-
 		// テンプレートデータを追加
 		templates = append(templates, templateData{
 			name:       templateName,

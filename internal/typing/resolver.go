@@ -25,10 +25,7 @@ func Resolve(schema scan.Schema, templateSrc string) (*TypedSchema, error) {
 	// オーバーライドを適用
 	applyOverrides(typed, resolver)
 
-	// 3. 必要なimportを収集
-	typed.RequiredImports = resolver.RequiredImports()
-
-	// 4. 名前付き型を抽出
+	// 3. 名前付き型を抽出
 	extractNamedTypes(typed)
 
 	return typed, nil
@@ -37,9 +34,8 @@ func Resolve(schema scan.Schema, templateSrc string) (*TypedSchema, error) {
 // inferDefaultTypes performs default type inference
 func inferDefaultTypes(schema scan.Schema) *TypedSchema {
 	typed := &TypedSchema{
-		Fields:          make(map[string]*TypedField),
-		RequiredImports: []string{},
-		NamedTypes:      []*NamedType{},
+		Fields:     make(map[string]*TypedField),
+		NamedTypes: []*NamedType{},
 	}
 
 	for name, field := range schema.Fields {
