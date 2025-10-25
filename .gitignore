@@ -1,5 +1,5 @@
 # ignore only built binaries
-/templagen
+/tmpltype
 *.exe
 *.exe~
 .idea

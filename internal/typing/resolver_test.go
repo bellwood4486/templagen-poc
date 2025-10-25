@@ -3,7 +3,7 @@ package typing
 import (
 	"testing"
 
-	"github.com/bellwood4486/templagen-poc/internal/scan"
+	"github.com/bellwood4486/tmpltype/internal/scan"
 )
 
 func TestIsBuiltinType(t *testing.T) {

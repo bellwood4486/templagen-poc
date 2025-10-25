@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bellwood4486/templagen-poc/internal/scan"
-	"github.com/bellwood4486/templagen-poc/internal/typing/magic"
-	"github.com/bellwood4486/templagen-poc/internal/util"
+	"github.com/bellwood4486/tmpltype/internal/scan"
+	"github.com/bellwood4486/tmpltype/internal/typing/magic"
+	"github.com/bellwood4486/tmpltype/internal/util"
 )
 
 // Resolve resolves types for a schema with both default inference and @param overrides

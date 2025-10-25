@@ -5,7 +5,7 @@ import (
 	"text/template"
 	tplparse "text/template/parse"
 
-	"github.com/bellwood4486/templagen-poc/internal/util"
+	"github.com/bellwood4486/tmpltype/internal/util"
 )
 
 // Kind は推論されたフィールド種別を表します。

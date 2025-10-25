@@ -3,7 +3,7 @@ package magic
 import (
 	"strings"
 
-	"github.com/bellwood4486/templagen-poc/internal/util"
+	"github.com/bellwood4486/tmpltype/internal/util"
 )
 
 // TypeResolver は @param ディレクティブからの型オーバーライドを管理する

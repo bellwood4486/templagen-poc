@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bellwood4486/templagen-poc/internal/gen"
+	"github.com/bellwood4486/tmpltype/internal/gen"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 
 	if *in == "" || *pkg == "" || *out == "" {
-		fmt.Fprintln(os.Stderr, "usage: templagen -in <pattern> -pkg <name> -out <file>")
+		fmt.Fprintln(os.Stderr, "usage: tmpltype -in <pattern> -pkg <name> -out <file>")
 		os.Exit(2)
 	}
 
