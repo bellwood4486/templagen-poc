@@ -324,18 +324,25 @@ import (
 // 型安全なテンプレート名型
 type TemplateName string
 
-// テンプレート名定数
-const (
-    TemplateNameEmail TemplateName = "email"
-)
+// テンプレート名の名前空間
+var Template = struct {
+    Email TemplateName
+}{
+    Email: "email",
+}
 
 // テンプレートファイルの埋め込み
 //go:embed templates/email.tmpl
 var emailTplSource string
 
+// テンプレート初期化ヘルパー
+func newTemplate(name TemplateName, source string) *template.Template {
+    return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 // すべてのテンプレートのマップ
 var templates = map[TemplateName]*template.Template{
-    TemplateNameEmail: template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+    Template.Email: newTemplate(Template.Email, emailTplSource),
 }
 
 // テンプレートマップを返す関数
@@ -374,9 +381,9 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-    tmpl, ok := templates[TemplateNameEmail]
+    tmpl, ok := templates[Template.Email]
     if !ok {
-        return fmt.Errorf("template %q not found", TemplateNameEmail)
+        return fmt.Errorf("template %q not found", Template.Email)
     }
     return tmpl.Execute(w, p)
 }
@@ -883,18 +890,25 @@ import (
 // Type-safe template name type
 type TemplateName string
 
-// Template name constants
-const (
-    TemplateNameEmail TemplateName = "email"
-)
+// Template namespace for type-safe template names
+var Template = struct {
+    Email TemplateName
+}{
+    Email: "email",
+}
 
 // Template file embedding
 //go:embed templates/email.tmpl
 var emailTplSource string
 
+// Template initialization helper
+func newTemplate(name TemplateName, source string) *template.Template {
+    return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
 // Map of all templates
 var templates = map[TemplateName]*template.Template{
-    TemplateNameEmail: template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+    Template.Email: newTemplate(Template.Email, emailTplSource),
 }
 
 // Function returning the templates map
@@ -933,9 +947,9 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-    tmpl, ok := templates[TemplateNameEmail]
+    tmpl, ok := templates[Template.Email]
     if !ok {
-        return fmt.Errorf("template %q not found", TemplateNameEmail)
+        return fmt.Errorf("template %q not found", Template.Email)
     }
     return tmpl.Execute(w, p)
 }
