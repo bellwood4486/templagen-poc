@@ -40,12 +40,12 @@ var slice_typesTplSource string
 var struct_typesTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameBasic_types: template.Must(template.New("basic_types").Option("missingkey=error").Parse(basic_typesTplSource)),
-	TemplateNameComplex_types: template.Must(template.New("complex_types").Option("missingkey=error").Parse(complex_typesTplSource)),
-	TemplateNameMap_types: template.Must(template.New("map_types").Option("missingkey=error").Parse(map_typesTplSource)),
-	TemplateNamePointer_types: template.Must(template.New("pointer_types").Option("missingkey=error").Parse(pointer_typesTplSource)),
-	TemplateNameSlice_types: template.Must(template.New("slice_types").Option("missingkey=error").Parse(slice_typesTplSource)),
-	TemplateNameStruct_types: template.Must(template.New("struct_types").Option("missingkey=error").Parse(struct_typesTplSource)),
+	TemplateNameBasic_types: template.Must(template.New(string(TemplateNameBasic_types)).Option("missingkey=error").Parse(basic_typesTplSource)),
+	TemplateNameComplex_types: template.Must(template.New(string(TemplateNameComplex_types)).Option("missingkey=error").Parse(complex_typesTplSource)),
+	TemplateNameMap_types: template.Must(template.New(string(TemplateNameMap_types)).Option("missingkey=error").Parse(map_typesTplSource)),
+	TemplateNamePointer_types: template.Must(template.New(string(TemplateNamePointer_types)).Option("missingkey=error").Parse(pointer_typesTplSource)),
+	TemplateNameSlice_types: template.Must(template.New(string(TemplateNameSlice_types)).Option("missingkey=error").Parse(slice_typesTplSource)),
+	TemplateNameStruct_types: template.Must(template.New(string(TemplateNameStruct_types)).Option("missingkey=error").Parse(struct_typesTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -89,17 +89,17 @@ func RenderBasic_types(w io.Writer, p Basic_types) error {
 // complex_types template
 // ============================================================
 
+type Complex_typesRecordsItem struct {
+	Age int
+	Name string
+	Score *int
+}
+
 type Complex_typesItemsItem struct {
 	ID int64
 	Price float64
 	Tags []string
 	Title string
-}
-
-type Complex_typesRecordsItem struct {
-	Age int
-	Name string
-	Score *int
 }
 
 // Complex_types represents parameters for complex_types template

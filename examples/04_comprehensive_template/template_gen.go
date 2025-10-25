@@ -31,10 +31,10 @@ var collectionsTplSource string
 var control_flowTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameAdvanced: template.Must(template.New("advanced").Option("missingkey=error").Parse(advancedTplSource)),
-	TemplateNameBasic_fields: template.Must(template.New("basic_fields").Option("missingkey=error").Parse(basic_fieldsTplSource)),
-	TemplateNameCollections: template.Must(template.New("collections").Option("missingkey=error").Parse(collectionsTplSource)),
-	TemplateNameControl_flow: template.Must(template.New("control_flow").Option("missingkey=error").Parse(control_flowTplSource)),
+	TemplateNameAdvanced: template.Must(template.New(string(TemplateNameAdvanced)).Option("missingkey=error").Parse(advancedTplSource)),
+	TemplateNameBasic_fields: template.Must(template.New(string(TemplateNameBasic_fields)).Option("missingkey=error").Parse(basic_fieldsTplSource)),
+	TemplateNameCollections: template.Must(template.New(string(TemplateNameCollections)).Option("missingkey=error").Parse(collectionsTplSource)),
+	TemplateNameControl_flow: template.Must(template.New(string(TemplateNameControl_flow)).Option("missingkey=error").Parse(control_flowTplSource)),
 }
 
 // Templates returns a map of all templates

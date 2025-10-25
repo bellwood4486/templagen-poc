@@ -19,7 +19,7 @@ const (
 var emailTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameEmail: template.Must(template.New("email").Option("missingkey=error").Parse(emailTplSource)),
+	TemplateNameEmail: template.Must(template.New(string(TemplateNameEmail)).Option("missingkey=error").Parse(emailTplSource)),
 }
 
 // Templates returns a map of all templates

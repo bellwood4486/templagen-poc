@@ -19,7 +19,7 @@ const (
 var メールTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameメール: template.Must(template.New("メール").Option("missingkey=error").Parse(メールTplSource)),
+	TemplateNameメール: template.Must(template.New(string(TemplateNameメール)).Option("missingkey=error").Parse(メールTplSource)),
 }
 
 // Templates returns a map of all templates

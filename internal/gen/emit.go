@@ -122,8 +122,8 @@ func Emit(units []Unit) (string, error) {
 	write(&b, "var templates = map[TemplateName]*template.Template{\n")
 	for _, tmpl := range templates {
 		constName := "TemplateName" + tmpl.typeName
-		write(&b, "\t%s: template.Must(template.New(%q).Option(%q).Parse(%s)),\n",
-			constName, tmpl.name, "missingkey=error", tmpl.varName)
+		write(&b, "\t%s: template.Must(template.New(string(%s)).Option(%q).Parse(%s)),\n",
+			constName, constName, "missingkey=error", tmpl.varName)
 	}
 	write(&b, "}\n\n")
 

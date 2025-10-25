@@ -27,9 +27,9 @@ var headerTplSource string
 var navTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameFooter: template.Must(template.New("footer").Option("missingkey=error").Parse(footerTplSource)),
-	TemplateNameHeader: template.Must(template.New("header").Option("missingkey=error").Parse(headerTplSource)),
-	TemplateNameNav: template.Must(template.New("nav").Option("missingkey=error").Parse(navTplSource)),
+	TemplateNameFooter: template.Must(template.New(string(TemplateNameFooter)).Option("missingkey=error").Parse(footerTplSource)),
+	TemplateNameHeader: template.Must(template.New(string(TemplateNameHeader)).Option("missingkey=error").Parse(headerTplSource)),
+	TemplateNameNav: template.Must(template.New(string(TemplateNameNav)).Option("missingkey=error").Parse(navTplSource)),
 }
 
 // Templates returns a map of all templates

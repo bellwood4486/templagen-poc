@@ -19,7 +19,7 @@ const (
 var userTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameUser: template.Must(template.New("user").Option("missingkey=error").Parse(userTplSource)),
+	TemplateNameUser: template.Must(template.New(string(TemplateNameUser)).Option("missingkey=error").Parse(userTplSource)),
 }
 
 // Templates returns a map of all templates
