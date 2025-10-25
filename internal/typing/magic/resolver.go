@@ -116,10 +116,6 @@ func (r *TypeResolver) collectImportsFromExpr(expr *TypeExpr) {
 	}
 
 	switch expr.Kind {
-	case TypeKindBase:
-		if expr.BaseType == "time.Time" {
-			r.imports["time"] = struct{}{}
-		}
 	case TypeKindSlice, TypeKindMap, TypeKindPointer:
 		r.collectImportsFromExpr(expr.Elem)
 	case TypeKindStruct:

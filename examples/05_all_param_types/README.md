@@ -53,7 +53,7 @@ This example demonstrates all working `@param` patterns organized across 6 focus
 
 | Template | Patterns Demonstrated |
 |----------|----------------------|
-| `basic_types.tmpl` | `string`, `int`, `int64`, `float64`, `bool`, `time.Time` |
+| `basic_types.tmpl` | `string`, `int`, `int64`, `float64`, `bool` |
 | `pointer_types.tmpl` | `*string`, `*int`, `*float64` (optional/nullable fields) |
 | `slice_types.tmpl` | `[]string`, `[]int`, `[]float64`, `[]bool` |
 | `map_types.tmpl` | `map[string]string`, `map[string]int`, `map[string]float64`, `map[string]bool` |
@@ -62,7 +62,7 @@ This example demonstrates all working `@param` patterns organized across 6 focus
 
 ### ✅ Supported Patterns Demonstrated
 
-1. **Basic Types**: `string`, `int`, `int64`, `float64`, `bool`, `time.Time`
+1. **Basic Types**: `string`, `int`, `int64`, `float64`, `bool`
 2. **Pointer Types**: `*string`, `*int`, `*float64` (optional/nullable fields)
 3. **Slices**: `[]string`, `[]int`, `[]float64`, `[]bool`
 4. **Maps**: `map[string]string`, `map[string]int`, `map[string]float64`, `map[string]bool`
@@ -97,7 +97,7 @@ go run .
 The `go generate` command creates `template_gen.go` containing:
 - Type-safe struct definitions for each template (e.g., `Basic_types`, `Pointer_types`)
 - Dedicated render functions for each template (e.g., `RenderBasic_types()`, `RenderPointer_types()`)
-- Proper imports (including `time` for `time.Time`)
+- Proper imports for referenced packages
 - Template map with all compiled templates
 
 ## File Structure

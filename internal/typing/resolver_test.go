@@ -17,7 +17,6 @@ func TestIsBuiltinType(t *testing.T) {
 		{"int64", "int64", true},
 		{"float64", "float64", true},
 		{"bool", "bool", true},
-		{"time.Time", "time.Time", true},
 		{"custom", "User", false},
 		{"slice", "[]string", false},
 		{"map", "map[string]string", false},
@@ -273,43 +272,6 @@ func TestResolve_WithParamOverride(t *testing.T) {
 	// User.Name should remain string
 	if typed.Fields["User"].Children["Name"].GoType != "string" {
 		t.Errorf("User.Name.GoType = %q, want %q", typed.Fields["User"].Children["Name"].GoType, "string")
-	}
-}
-
-func TestResolve_WithTimeImport(t *testing.T) {
-	schema := scan.Schema{
-		Fields: map[string]*scan.Field{
-			"CreatedAt": {
-				Name: "CreatedAt",
-				Kind: scan.KindString,
-			},
-		},
-	}
-
-	templateSrc := `
-{{/* @param CreatedAt time.Time */}}
-Created: {{ .CreatedAt }}
-`
-
-	typed, err := Resolve(schema, templateSrc)
-	if err != nil {
-		t.Fatalf("Resolve failed: %v", err)
-	}
-
-	if typed.Fields["CreatedAt"].GoType != "time.Time" {
-		t.Errorf("CreatedAt.GoType = %q, want %q", typed.Fields["CreatedAt"].GoType, "time.Time")
-	}
-
-	found := false
-	for _, imp := range typed.RequiredImports {
-		if imp == "time" {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		t.Error("expected 'time' import, but not found")
 	}
 }
 

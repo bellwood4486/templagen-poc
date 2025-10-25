@@ -15,7 +15,6 @@ func TestParseType_BaseType(t *testing.T) {
 		{"int64", TypeKindBase, "int64"},
 		{"bool", TypeKindBase, "bool"},
 		{"float64", TypeKindBase, "float64"},
-		{"time.Time", TypeKindBase, "time.Time"},
 	}
 
 	for _, tt := range tests {

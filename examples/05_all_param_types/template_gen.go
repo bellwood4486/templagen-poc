@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"text/template"
-	"time"
 )
 
 // TemplateName is a type-safe template name
@@ -14,19 +13,19 @@ type TemplateName string
 
 // Template provides type-safe access to template names
 var Template = struct {
-	Basic_types TemplateName
+	Basic_types   TemplateName
 	Complex_types TemplateName
-	Map_types TemplateName
+	Map_types     TemplateName
 	Pointer_types TemplateName
-	Slice_types TemplateName
-	Struct_types TemplateName
+	Slice_types   TemplateName
+	Struct_types  TemplateName
 }{
-	Basic_types: "basic_types",
+	Basic_types:   "basic_types",
 	Complex_types: "complex_types",
-	Map_types: "map_types",
+	Map_types:     "map_types",
 	Pointer_types: "pointer_types",
-	Slice_types: "slice_types",
-	Struct_types: "struct_types",
+	Slice_types:   "slice_types",
+	Struct_types:  "struct_types",
 }
 
 //go:embed templates/basic_types.tmpl
@@ -52,12 +51,12 @@ func newTemplate(name TemplateName, source string) *template.Template {
 }
 
 var templates = map[TemplateName]*template.Template{
-	Template.Basic_types: newTemplate(Template.Basic_types, basic_typesTplSource),
+	Template.Basic_types:   newTemplate(Template.Basic_types, basic_typesTplSource),
 	Template.Complex_types: newTemplate(Template.Complex_types, complex_typesTplSource),
-	Template.Map_types: newTemplate(Template.Map_types, map_typesTplSource),
+	Template.Map_types:     newTemplate(Template.Map_types, map_typesTplSource),
 	Template.Pointer_types: newTemplate(Template.Pointer_types, pointer_typesTplSource),
-	Template.Slice_types: newTemplate(Template.Slice_types, slice_typesTplSource),
-	Template.Struct_types: newTemplate(Template.Struct_types, struct_typesTplSource),
+	Template.Slice_types:   newTemplate(Template.Slice_types, slice_typesTplSource),
+	Template.Struct_types:  newTemplate(Template.Struct_types, struct_typesTplSource),
 }
 
 // Templates returns a map of all templates
@@ -81,11 +80,10 @@ func Render(w io.Writer, name TemplateName, data any) error {
 // Basic_types represents parameters for basic_types template
 type Basic_types struct {
 	Active bool
-	Age int
-	CreatedAt time.Time
-	Name string
-	Price float64
-	Score int64
+	Age    int
+	Name   string
+	Price  float64
+	Score  int64
 }
 
 // RenderBasic_types renders the basic_types template
@@ -102,23 +100,23 @@ func RenderBasic_types(w io.Writer, p Basic_types) error {
 // ============================================================
 
 type Complex_typesItemsItem struct {
-	ID int64
+	ID    int64
 	Price float64
-	Tags []string
+	Tags  []string
 	Title string
 }
 
 type Complex_typesRecordsItem struct {
-	Age int
-	Name string
+	Age   int
+	Name  string
 	Score *int
 }
 
 // Complex_types represents parameters for complex_types template
 type Complex_types struct {
-	Items []Complex_typesItemsItem
+	Items         []Complex_typesItemsItem
 	OptionalItems *[]string
-	Records []Complex_typesRecordsItem
+	Records       []Complex_typesRecordsItem
 }
 
 // RenderComplex_types renders the complex_types template
@@ -139,7 +137,7 @@ type Map_types struct {
 	Counters map[string]int
 	Features map[string]bool
 	Metadata map[string]string
-	Prices map[string]float64
+	Prices   map[string]float64
 }
 
 // RenderMap_types renders the map_types template
@@ -157,8 +155,8 @@ func RenderMap_types(w io.Writer, p Map_types) error {
 
 // Pointer_types represents parameters for pointer_types template
 type Pointer_types struct {
-	Discount *float64
-	Email *string
+	Discount    *float64
+	Email       *string
 	MiddleScore *int
 	PhoneNumber *string
 }
@@ -179,9 +177,9 @@ func RenderPointer_types(w io.Writer, p Pointer_types) error {
 // Slice_types represents parameters for slice_types template
 type Slice_types struct {
 	CategoryIDs []int
-	Flags []bool
-	Ratings []float64
-	Tags []string
+	Flags       []bool
+	Ratings     []float64
+	Tags        []string
 }
 
 // RenderSlice_types renders the slice_types template
@@ -199,20 +197,20 @@ func RenderSlice_types(w io.Writer, p Slice_types) error {
 
 type Struct_typesProduct struct {
 	InStock bool
-	Price float64
-	SKU string
+	Price   float64
+	SKU     string
 }
 
 type Struct_typesUser struct {
 	Email string
-	ID int64
-	Name string
+	ID    int64
+	Name  string
 }
 
 // Struct_types represents parameters for struct_types template
 type Struct_types struct {
 	Product Struct_typesProduct
-	User Struct_typesUser
+	User    Struct_typesUser
 }
 
 // RenderStruct_types renders the struct_types template
@@ -223,4 +221,3 @@ func RenderStruct_types(w io.Writer, p Struct_types) error {
 	}
 	return tmpl.Execute(w, p)
 }
-
