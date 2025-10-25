@@ -15,11 +15,11 @@ type TemplateName string
 var Template = struct {
 	Footer TemplateName
 	Header TemplateName
-	Nav TemplateName
+	Nav    TemplateName
 }{
 	Footer: "footer",
 	Header: "header",
-	Nav: "nav",
+	Nav:    "nav",
 }
 
 //go:embed templates/footer.tmpl
@@ -38,7 +38,7 @@ func newTemplate(name TemplateName, source string) *template.Template {
 var templates = map[TemplateName]*template.Template{
 	Template.Footer: newTemplate(Template.Footer, footerTplSource),
 	Template.Header: newTemplate(Template.Header, headerTplSource),
-	Template.Nav: newTemplate(Template.Nav, navTplSource),
+	Template.Nav:    newTemplate(Template.Nav, navTplSource),
 }
 
 // Templates returns a map of all templates
@@ -61,14 +61,14 @@ func Render(w io.Writer, name TemplateName, data any) error {
 
 type FooterLinksItem struct {
 	Text string
-	URL string
+	URL  string
 }
 
 // Footer represents parameters for footer template
 type Footer struct {
 	CompanyName string
-	Links []FooterLinksItem
-	Year int
+	Links       []FooterLinksItem
+	Year        int
 }
 
 // RenderFooter renders the footer template
@@ -87,7 +87,7 @@ func RenderFooter(w io.Writer, p Footer) error {
 // Header represents parameters for header template
 type Header struct {
 	Subtitle *string
-	Title string
+	Title    string
 }
 
 // RenderHeader renders the header template
@@ -105,19 +105,19 @@ func RenderHeader(w io.Writer, p Header) error {
 
 type NavItemsItem struct {
 	Active bool
-	Link string
-	Name string
+	Link   string
+	Name   string
 }
 
 type NavCurrentUser struct {
 	IsAdmin bool
-	Name string
+	Name    string
 }
 
 // Nav represents parameters for nav template
 type Nav struct {
 	CurrentUser NavCurrentUser
-	Items []NavItemsItem
+	Items       []NavItemsItem
 }
 
 // RenderNav renders the nav template
@@ -128,4 +128,3 @@ func RenderNav(w io.Writer, p Nav) error {
 	}
 	return tmpl.Execute(w, p)
 }
-

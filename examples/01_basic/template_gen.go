@@ -54,7 +54,7 @@ type EmailUser struct {
 // Email represents parameters for email template
 type Email struct {
 	Message string
-	User EmailUser
+	User    EmailUser
 }
 
 // RenderEmail renders the email template
@@ -65,4 +65,3 @@ func RenderEmail(w io.Writer, p Email) error {
 	}
 	return tmpl.Execute(w, p)
 }
-

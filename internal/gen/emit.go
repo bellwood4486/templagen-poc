@@ -2,6 +2,7 @@ package gen
 
 import (
 	"fmt"
+	"go/format"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -207,7 +208,13 @@ func Emit(units []Unit) (string, error) {
 		write(&b, "}\n\n")
 	}
 
-	return b.String(), nil
+	// フォーマット適用
+	formatted, err := format.Source([]byte(b.String()))
+	if err != nil {
+		return "", fmt.Errorf("failed to format generated code: %w", err)
+	}
+
+	return string(formatted), nil
 }
 
 // extractTemplateName はファイルパスからテンプレート名を抽出する

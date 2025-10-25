@@ -54,7 +54,7 @@ type TplUser struct {
 // Tpl represents parameters for tpl template
 type Tpl struct {
 	Message string
-	User TplUser
+	User    TplUser
 }
 
 // RenderTpl renders the tpl template
@@ -65,4 +65,3 @@ func RenderTpl(w io.Writer, p Tpl) error {
 	}
 	return tmpl.Execute(w, p)
 }
-
