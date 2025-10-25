@@ -11,11 +11,16 @@ import (
 // TemplateName is a type-safe template name
 type TemplateName string
 
-const (
-	TemplateNameFooter TemplateName = "footer"
-	TemplateNameHeader TemplateName = "header"
-	TemplateNameNav TemplateName = "nav"
-)
+// Template provides type-safe access to template names
+var Template = struct {
+	Footer TemplateName
+	Header TemplateName
+	Nav TemplateName
+}{
+	Footer: "footer",
+	Header: "header",
+	Nav: "nav",
+}
 
 //go:embed templates/footer.tmpl
 var footerTplSource string
@@ -27,9 +32,9 @@ var headerTplSource string
 var navTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameFooter: template.Must(template.New(string(TemplateNameFooter)).Option("missingkey=error").Parse(footerTplSource)),
-	TemplateNameHeader: template.Must(template.New(string(TemplateNameHeader)).Option("missingkey=error").Parse(headerTplSource)),
-	TemplateNameNav: template.Must(template.New(string(TemplateNameNav)).Option("missingkey=error").Parse(navTplSource)),
+	Template.Footer: template.Must(template.New(string(Template.Footer)).Option("missingkey=error").Parse(footerTplSource)),
+	Template.Header: template.Must(template.New(string(Template.Header)).Option("missingkey=error").Parse(headerTplSource)),
+	Template.Nav: template.Must(template.New(string(Template.Nav)).Option("missingkey=error").Parse(navTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -64,9 +69,9 @@ type Footer struct {
 
 // RenderFooter renders the footer template
 func RenderFooter(w io.Writer, p Footer) error {
-	tmpl, ok := templates[TemplateNameFooter]
+	tmpl, ok := templates[Template.Footer]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameFooter)
+		return fmt.Errorf("template %q not found", Template.Footer)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -83,9 +88,9 @@ type Header struct {
 
 // RenderHeader renders the header template
 func RenderHeader(w io.Writer, p Header) error {
-	tmpl, ok := templates[TemplateNameHeader]
+	tmpl, ok := templates[Template.Header]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameHeader)
+		return fmt.Errorf("template %q not found", Template.Header)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -113,9 +118,9 @@ type Nav struct {
 
 // RenderNav renders the nav template
 func RenderNav(w io.Writer, p Nav) error {
-	tmpl, ok := templates[TemplateNameNav]
+	tmpl, ok := templates[Template.Nav]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameNav)
+		return fmt.Errorf("template %q not found", Template.Nav)
 	}
 	return tmpl.Execute(w, p)
 }

@@ -27,7 +27,7 @@ func main() {
 
 	// Use generic Render function
 	var navBuf bytes.Buffer
-	_ = Render(&navBuf, "nav", Nav{
+	_ = Render(&navBuf, Template.Nav, Nav{
 		CurrentUser: NavCurrentUser{
 			Name:    "Admin User",
 			IsAdmin: true,

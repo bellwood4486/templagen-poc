@@ -11,15 +11,18 @@ import (
 // TemplateName is a type-safe template name
 type TemplateName string
 
-const (
-	TemplateNameEmail TemplateName = "email"
-)
+// Template provides type-safe access to template names
+var Template = struct {
+	Email TemplateName
+}{
+	Email: "email",
+}
 
 //go:embed templates/email.tmpl
 var emailTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameEmail: template.Must(template.New(string(TemplateNameEmail)).Option("missingkey=error").Parse(emailTplSource)),
+	Template.Email: template.Must(template.New(string(Template.Email)).Option("missingkey=error").Parse(emailTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -52,9 +55,9 @@ type Email struct {
 
 // RenderEmail renders the email template
 func RenderEmail(w io.Writer, p Email) error {
-	tmpl, ok := templates[TemplateNameEmail]
+	tmpl, ok := templates[Template.Email]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameEmail)
+		return fmt.Errorf("template %q not found", Template.Email)
 	}
 	return tmpl.Execute(w, p)
 }

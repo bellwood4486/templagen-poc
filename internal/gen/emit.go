@@ -102,15 +102,19 @@ func Emit(units []Unit) (string, error) {
 	}
 	write(&b, ")\n\n")
 
-	// TemplateName型と定数の生成
+	// TemplateName型と構造体ベースの名前空間の生成
 	write(&b, "// TemplateName is a type-safe template name\n")
 	write(&b, "type TemplateName string\n\n")
-	write(&b, "const (\n")
+	write(&b, "// Template provides type-safe access to template names\n")
+	write(&b, "var Template = struct {\n")
 	for _, tmpl := range templates {
-		constName := "TemplateName" + tmpl.typeName
-		write(&b, "\t%s TemplateName = %q\n", constName, tmpl.name)
+		write(&b, "\t%s TemplateName\n", tmpl.typeName)
 	}
-	write(&b, ")\n\n")
+	write(&b, "}{\n")
+	for _, tmpl := range templates {
+		write(&b, "\t%s: %q,\n", tmpl.typeName, tmpl.name)
+	}
+	write(&b, "}\n\n")
 
 	// 各テンプレートのembed宣言
 	for _, tmpl := range templates {
@@ -121,9 +125,9 @@ func Emit(units []Unit) (string, error) {
 	// Templates map - initialized once at package initialization
 	write(&b, "var templates = map[TemplateName]*template.Template{\n")
 	for _, tmpl := range templates {
-		constName := "TemplateName" + tmpl.typeName
+		fieldRef := "Template." + tmpl.typeName
 		write(&b, "\t%s: template.Must(template.New(string(%s)).Option(%q).Parse(%s)),\n",
-			constName, constName, "missingkey=error", tmpl.varName)
+			fieldRef, fieldRef, "missingkey=error", tmpl.varName)
 	}
 	write(&b, "}\n\n")
 
@@ -187,12 +191,12 @@ func Emit(units []Unit) (string, error) {
 
 		// Render関数の生成
 		funcName := "Render" + tmpl.typeName
-		constName := "TemplateName" + tmpl.typeName
+		fieldRef := "Template." + tmpl.typeName
 		write(&b, "// %s renders the %s template\n", funcName, tmpl.name)
 		write(&b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
-		write(&b, "\ttmpl, ok := templates[%s]\n", constName)
+		write(&b, "\ttmpl, ok := templates[%s]\n", fieldRef)
 		write(&b, "\tif !ok {\n")
-		write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", %s)\n", constName)
+		write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", %s)\n", fieldRef)
 		write(&b, "\t}\n")
 		write(&b, "\treturn tmpl.Execute(w, p)\n")
 		write(&b, "}\n\n")

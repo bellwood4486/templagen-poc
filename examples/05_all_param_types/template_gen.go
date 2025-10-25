@@ -12,14 +12,22 @@ import (
 // TemplateName is a type-safe template name
 type TemplateName string
 
-const (
-	TemplateNameBasic_types TemplateName = "basic_types"
-	TemplateNameComplex_types TemplateName = "complex_types"
-	TemplateNameMap_types TemplateName = "map_types"
-	TemplateNamePointer_types TemplateName = "pointer_types"
-	TemplateNameSlice_types TemplateName = "slice_types"
-	TemplateNameStruct_types TemplateName = "struct_types"
-)
+// Template provides type-safe access to template names
+var Template = struct {
+	Basic_types TemplateName
+	Complex_types TemplateName
+	Map_types TemplateName
+	Pointer_types TemplateName
+	Slice_types TemplateName
+	Struct_types TemplateName
+}{
+	Basic_types: "basic_types",
+	Complex_types: "complex_types",
+	Map_types: "map_types",
+	Pointer_types: "pointer_types",
+	Slice_types: "slice_types",
+	Struct_types: "struct_types",
+}
 
 //go:embed templates/basic_types.tmpl
 var basic_typesTplSource string
@@ -40,12 +48,12 @@ var slice_typesTplSource string
 var struct_typesTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameBasic_types: template.Must(template.New(string(TemplateNameBasic_types)).Option("missingkey=error").Parse(basic_typesTplSource)),
-	TemplateNameComplex_types: template.Must(template.New(string(TemplateNameComplex_types)).Option("missingkey=error").Parse(complex_typesTplSource)),
-	TemplateNameMap_types: template.Must(template.New(string(TemplateNameMap_types)).Option("missingkey=error").Parse(map_typesTplSource)),
-	TemplateNamePointer_types: template.Must(template.New(string(TemplateNamePointer_types)).Option("missingkey=error").Parse(pointer_typesTplSource)),
-	TemplateNameSlice_types: template.Must(template.New(string(TemplateNameSlice_types)).Option("missingkey=error").Parse(slice_typesTplSource)),
-	TemplateNameStruct_types: template.Must(template.New(string(TemplateNameStruct_types)).Option("missingkey=error").Parse(struct_typesTplSource)),
+	Template.Basic_types: template.Must(template.New(string(Template.Basic_types)).Option("missingkey=error").Parse(basic_typesTplSource)),
+	Template.Complex_types: template.Must(template.New(string(Template.Complex_types)).Option("missingkey=error").Parse(complex_typesTplSource)),
+	Template.Map_types: template.Must(template.New(string(Template.Map_types)).Option("missingkey=error").Parse(map_typesTplSource)),
+	Template.Pointer_types: template.Must(template.New(string(Template.Pointer_types)).Option("missingkey=error").Parse(pointer_typesTplSource)),
+	Template.Slice_types: template.Must(template.New(string(Template.Slice_types)).Option("missingkey=error").Parse(slice_typesTplSource)),
+	Template.Struct_types: template.Must(template.New(string(Template.Struct_types)).Option("missingkey=error").Parse(struct_typesTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -78,9 +86,9 @@ type Basic_types struct {
 
 // RenderBasic_types renders the basic_types template
 func RenderBasic_types(w io.Writer, p Basic_types) error {
-	tmpl, ok := templates[TemplateNameBasic_types]
+	tmpl, ok := templates[Template.Basic_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameBasic_types)
+		return fmt.Errorf("template %q not found", Template.Basic_types)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -89,17 +97,17 @@ func RenderBasic_types(w io.Writer, p Basic_types) error {
 // complex_types template
 // ============================================================
 
-type Complex_typesRecordsItem struct {
-	Age int
-	Name string
-	Score *int
-}
-
 type Complex_typesItemsItem struct {
 	ID int64
 	Price float64
 	Tags []string
 	Title string
+}
+
+type Complex_typesRecordsItem struct {
+	Age int
+	Name string
+	Score *int
 }
 
 // Complex_types represents parameters for complex_types template
@@ -111,9 +119,9 @@ type Complex_types struct {
 
 // RenderComplex_types renders the complex_types template
 func RenderComplex_types(w io.Writer, p Complex_types) error {
-	tmpl, ok := templates[TemplateNameComplex_types]
+	tmpl, ok := templates[Template.Complex_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameComplex_types)
+		return fmt.Errorf("template %q not found", Template.Complex_types)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -132,9 +140,9 @@ type Map_types struct {
 
 // RenderMap_types renders the map_types template
 func RenderMap_types(w io.Writer, p Map_types) error {
-	tmpl, ok := templates[TemplateNameMap_types]
+	tmpl, ok := templates[Template.Map_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameMap_types)
+		return fmt.Errorf("template %q not found", Template.Map_types)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -153,9 +161,9 @@ type Pointer_types struct {
 
 // RenderPointer_types renders the pointer_types template
 func RenderPointer_types(w io.Writer, p Pointer_types) error {
-	tmpl, ok := templates[TemplateNamePointer_types]
+	tmpl, ok := templates[Template.Pointer_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNamePointer_types)
+		return fmt.Errorf("template %q not found", Template.Pointer_types)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -174,9 +182,9 @@ type Slice_types struct {
 
 // RenderSlice_types renders the slice_types template
 func RenderSlice_types(w io.Writer, p Slice_types) error {
-	tmpl, ok := templates[TemplateNameSlice_types]
+	tmpl, ok := templates[Template.Slice_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameSlice_types)
+		return fmt.Errorf("template %q not found", Template.Slice_types)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -205,9 +213,9 @@ type Struct_types struct {
 
 // RenderStruct_types renders the struct_types template
 func RenderStruct_types(w io.Writer, p Struct_types) error {
-	tmpl, ok := templates[TemplateNameStruct_types]
+	tmpl, ok := templates[Template.Struct_types]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameStruct_types)
+		return fmt.Errorf("template %q not found", Template.Struct_types)
 	}
 	return tmpl.Execute(w, p)
 }

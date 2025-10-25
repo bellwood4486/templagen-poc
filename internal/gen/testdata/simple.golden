@@ -11,15 +11,18 @@ import (
 // TemplateName is a type-safe template name
 type TemplateName string
 
-const (
-	TemplateNameTpl TemplateName = "tpl"
-)
+// Template provides type-safe access to template names
+var Template = struct {
+	Tpl TemplateName
+}{
+	Tpl: "tpl",
+}
 
 //go:embed tpl.tmpl
 var tplTplSource string
 
 var templates = map[TemplateName]*template.Template{
-	TemplateNameTpl: template.Must(template.New(string(TemplateNameTpl)).Option("missingkey=error").Parse(tplTplSource)),
+	Template.Tpl: template.Must(template.New(string(Template.Tpl)).Option("missingkey=error").Parse(tplTplSource)),
 }
 
 // Templates returns a map of all templates
@@ -52,9 +55,9 @@ type Tpl struct {
 
 // RenderTpl renders the tpl template
 func RenderTpl(w io.Writer, p Tpl) error {
-	tmpl, ok := templates[TemplateNameTpl]
+	tmpl, ok := templates[Template.Tpl]
 	if !ok {
-		return fmt.Errorf("template %q not found", TemplateNameTpl)
+		return fmt.Errorf("template %q not found", Template.Tpl)
 	}
 	return tmpl.Execute(w, p)
 }

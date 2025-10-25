@@ -9,7 +9,7 @@ func main() {
 	// Example 1: Using generic Render with map[string]any
 	fmt.Println("=== Example 1: Render (dynamic) ===")
 	var buf1 bytes.Buffer
-	_ = Render(&buf1, "email", map[string]any{
+	_ = Render(&buf1, Template.Email, map[string]any{
 		"User":    map[string]any{"Name": "Alice"},
 		"Message": "Welcome!",
 	})
