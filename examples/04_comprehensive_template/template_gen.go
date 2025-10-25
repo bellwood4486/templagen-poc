@@ -32,6 +32,19 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
+// Render renders a template by name with the given data
+func Render(w io.Writer, name string, data any) error {
+	tmpl, ok := templates[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return tmpl.Execute(w, data)
+}
+
+// ============================================================
+// advanced template
+// ============================================================
+
 type AdvancedCompany struct {
 	Department AdvancedDepartment
 }
@@ -65,6 +78,19 @@ type Advanced struct {
 	Project AdvancedProject
 }
 
+// RenderAdvanced renders the advanced template
+func RenderAdvanced(w io.Writer, p Advanced) error {
+	tmpl, ok := templates["advanced"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "advanced")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// basic_fields template
+// ============================================================
+
 type Basic_fieldsAuthor struct {
 	Email string
 	Name string
@@ -75,6 +101,19 @@ type Basic_fields struct {
 	Author Basic_fieldsAuthor
 	Title string
 }
+
+// RenderBasic_fields renders the basic_fields template
+func RenderBasic_fields(w io.Writer, p Basic_fields) error {
+	tmpl, ok := templates["basic_fields"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "basic_fields")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// collections template
+// ============================================================
 
 type CollectionsItemsItem struct {
 	Description string
@@ -88,6 +127,19 @@ type Collections struct {
 	Meta map[string]string
 }
 
+// RenderCollections renders the collections template
+func RenderCollections(w io.Writer, p Collections) error {
+	tmpl, ok := templates["collections"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "collections")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// control_flow template
+// ============================================================
+
 type Control_flowSummary struct {
 	Content string
 	LastUpdated string
@@ -100,33 +152,6 @@ type Control_flow struct {
 	Summary Control_flowSummary
 }
 
-// RenderAdvanced renders the advanced template
-func RenderAdvanced(w io.Writer, p Advanced) error {
-	tmpl, ok := templates["advanced"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "advanced")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderBasic_fields renders the basic_fields template
-func RenderBasic_fields(w io.Writer, p Basic_fields) error {
-	tmpl, ok := templates["basic_fields"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "basic_fields")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderCollections renders the collections template
-func RenderCollections(w io.Writer, p Collections) error {
-	tmpl, ok := templates["collections"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "collections")
-	}
-	return tmpl.Execute(w, p)
-}
-
 // RenderControl_flow renders the control_flow template
 func RenderControl_flow(w io.Writer, p Control_flow) error {
 	tmpl, ok := templates["control_flow"]
@@ -136,11 +161,3 @@ func RenderControl_flow(w io.Writer, p Control_flow) error {
 	return tmpl.Execute(w, p)
 }
 
-// Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := templates[name]
-	if !ok {
-		return fmt.Errorf("template %q not found", name)
-	}
-	return tmpl.Execute(w, data)
-}

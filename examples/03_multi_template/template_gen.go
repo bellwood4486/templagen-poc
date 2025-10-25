@@ -28,6 +28,19 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
+// Render renders a template by name with the given data
+func Render(w io.Writer, name string, data any) error {
+	tmpl, ok := templates[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return tmpl.Execute(w, data)
+}
+
+// ============================================================
+// footer template
+// ============================================================
+
 type FooterLinksItem struct {
 	Text string
 	URL string
@@ -40,11 +53,37 @@ type Footer struct {
 	Year int
 }
 
+// RenderFooter renders the footer template
+func RenderFooter(w io.Writer, p Footer) error {
+	tmpl, ok := templates["footer"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "footer")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// header template
+// ============================================================
+
 // Header represents parameters for header template
 type Header struct {
 	Subtitle *string
 	Title string
 }
+
+// RenderHeader renders the header template
+func RenderHeader(w io.Writer, p Header) error {
+	tmpl, ok := templates["header"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "header")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// nav template
+// ============================================================
 
 type NavItemsItem struct {
 	Active bool
@@ -63,24 +102,6 @@ type Nav struct {
 	Items []NavItemsItem
 }
 
-// RenderFooter renders the footer template
-func RenderFooter(w io.Writer, p Footer) error {
-	tmpl, ok := templates["footer"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "footer")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderHeader renders the header template
-func RenderHeader(w io.Writer, p Header) error {
-	tmpl, ok := templates["header"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "header")
-	}
-	return tmpl.Execute(w, p)
-}
-
 // RenderNav renders the nav template
 func RenderNav(w io.Writer, p Nav) error {
 	tmpl, ok := templates["nav"]
@@ -90,11 +111,3 @@ func RenderNav(w io.Writer, p Nav) error {
 	return tmpl.Execute(w, p)
 }
 
-// Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := templates[name]
-	if !ok {
-		return fmt.Errorf("template %q not found", name)
-	}
-	return tmpl.Execute(w, data)
-}
