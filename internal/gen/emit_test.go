@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bellwood4486/templagen-poc/internal/gen"
+	"github.com/bellwood4486/tmpltype/internal/gen"
 )
 
 func parseCode(t *testing.T, code string) *ast.File {

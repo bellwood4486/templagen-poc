@@ -1,6 +1,6 @@
 # Example 06: Non-ASCII Filename
 
-This example demonstrates how templagen handles template files with non-ASCII filenames (e.g., Japanese).
+This example demonstrates how tmpltype handles template files with non-ASCII filenames (e.g., Japanese).
 
 ## Template File
 
@@ -8,7 +8,7 @@ This example demonstrates how templagen handles template files with non-ASCII fi
 
 ## Generated Code
 
-From the Japanese filename `メール.tmpl`, templagen generates:
+From the Japanese filename `メール.tmpl`, tmpltype generates:
 
 - **Type name**: `メール`
 - **Render function**: `Renderメール(w io.Writer, p メール) error`

@@ -25,8 +25,8 @@
 
 **手順**
 
-* 新規リポ作成（例: `github.com/you/templagen`）
-* `go mod init github.com/you/templagen`
+* 新規リポ作成（例: `github.com/you/tmpltype`）
+* `go mod init github.com/you/tmpltype`
 
 ---
 
@@ -34,19 +34,19 @@
 
 **DoD**
 
-* `cmd/templagen` バイナリがビルドできる。
-* `templagen gen --help` 相当の最低限パースが動く（まだ生成はしないでもOK）。
+* `cmd/tmpltype` バイナリがビルドできる。
+* `tmpltype gen --help` 相当の最低限パースが動く（まだ生成はしないでもOK）。
 
 **手順**
 
 * ディレクトリ：
 
   ```
-  cmd/templagen/
+  cmd/tmpltype/
   internal/{magic,scan,gen}/
   examples/{mailtpl/,main.go}
   ```
-* `cmd/templagen/main.go` にフラグ（`--in --pkg --out`）だけ実装。
+* `cmd/tmpltype/main.go` にフラグ（`--in --pkg --out`）だけ実装。
 * とりあえず `Template()` + `RenderAny()` を吐くコード生成（固定文字列）で出力→コンパイル通ることを目標。
 
 **確認**

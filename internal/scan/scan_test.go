@@ -3,7 +3,7 @@ package scan_test
 import (
 	"testing"
 
-	"github.com/bellwood4486/templagen-poc/internal/scan"
+	"github.com/bellwood4486/tmpltype/internal/scan"
 )
 
 func TestScanTemplate_SimpleFieldsAndNested(t *testing.T) {

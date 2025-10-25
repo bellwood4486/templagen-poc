@@ -1,6 +1,6 @@
 # Example 5: All Param Types
 
-This example demonstrates **all supported types** that can be used with the `@param` directive in templagen.
+This example demonstrates **all supported types** that can be used with the `@param` directive in tmpltype.
 
 ## Overview
 
