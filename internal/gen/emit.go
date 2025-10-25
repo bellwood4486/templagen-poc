@@ -102,29 +102,49 @@ func Emit(units []Unit) (string, error) {
 	}
 	write(&b, ")\n\n")
 
+	// TemplateName型と構造体ベースの名前空間の生成
+	write(&b, "// TemplateName is a type-safe template name\n")
+	write(&b, "type TemplateName string\n\n")
+	write(&b, "// Template provides type-safe access to template names\n")
+	write(&b, "var Template = struct {\n")
+	for _, tmpl := range templates {
+		write(&b, "\t%s TemplateName\n", tmpl.typeName)
+	}
+	write(&b, "}{\n")
+	for _, tmpl := range templates {
+		write(&b, "\t%s: %q,\n", tmpl.typeName, tmpl.name)
+	}
+	write(&b, "}\n\n")
+
 	// 各テンプレートのembed宣言
 	for _, tmpl := range templates {
 		write(&b, "//go:embed %s\n", tmpl.sourcePath)
 		write(&b, "var %s string\n\n", tmpl.varName)
 	}
 
+	// Helper function for template initialization
+	write(&b, "func newTemplate(name TemplateName, source string) *template.Template {\n")
+	write(&b, "\treturn template.Must(template.New(string(name)).Option(%q).Parse(source))\n", "missingkey=error")
+	write(&b, "}\n\n")
+
 	// Templates map - initialized once at package initialization
-	write(&b, "var templates = map[string]*template.Template{\n")
+	write(&b, "var templates = map[TemplateName]*template.Template{\n")
 	for _, tmpl := range templates {
-		write(&b, "\t%q: template.Must(template.New(%q).Option(%q).Parse(%s)),\n",
-			tmpl.name, tmpl.name, "missingkey=error", tmpl.varName)
+		fieldRef := "Template." + tmpl.typeName
+		write(&b, "\t%s: newTemplate(%s, %s),\n",
+			fieldRef, fieldRef, tmpl.varName)
 	}
 	write(&b, "}\n\n")
 
 	// Templates() function - returns the pre-initialized map
 	write(&b, "// Templates returns a map of all templates\n")
-	write(&b, "func Templates() map[string]*template.Template {\n")
+	write(&b, "func Templates() map[TemplateName]*template.Template {\n")
 	write(&b, "\treturn templates\n")
 	write(&b, "}\n\n")
 
 	// 汎用Render関数（共通部分に配置）
 	write(&b, "// Render renders a template by name with the given data\n")
-	write(&b, "func Render(w io.Writer, name string, data any) error {\n")
+	write(&b, "func Render(w io.Writer, name TemplateName, data any) error {\n")
 	write(&b, "\ttmpl, ok := templates[name]\n")
 	write(&b, "\tif !ok {\n")
 	write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", name)\n")
@@ -176,11 +196,12 @@ func Emit(units []Unit) (string, error) {
 
 		// Render関数の生成
 		funcName := "Render" + tmpl.typeName
+		fieldRef := "Template." + tmpl.typeName
 		write(&b, "// %s renders the %s template\n", funcName, tmpl.name)
 		write(&b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
-		write(&b, "\ttmpl, ok := templates[%q]\n", tmpl.name)
+		write(&b, "\ttmpl, ok := templates[%s]\n", fieldRef)
 		write(&b, "\tif !ok {\n")
-		write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", %q)\n", tmpl.name)
+		write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", %s)\n", fieldRef)
 		write(&b, "\t}\n")
 		write(&b, "\treturn tmpl.Execute(w, p)\n")
 		write(&b, "}\n\n")

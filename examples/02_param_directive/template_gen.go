@@ -8,20 +8,34 @@ import (
 	"text/template"
 )
 
+// TemplateName is a type-safe template name
+type TemplateName string
+
+// Template provides type-safe access to template names
+var Template = struct {
+	User TemplateName
+}{
+	User: "user",
+}
+
 //go:embed templates/user.tmpl
 var userTplSource string
 
-var templates = map[string]*template.Template{
-	"user": template.Must(template.New("user").Option("missingkey=error").Parse(userTplSource)),
+func newTemplate(name TemplateName, source string) *template.Template {
+	return template.Must(template.New(string(name)).Option("missingkey=error").Parse(source))
+}
+
+var templates = map[TemplateName]*template.Template{
+	Template.User: newTemplate(Template.User, userTplSource),
 }
 
 // Templates returns a map of all templates
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
 	return templates
 }
 
 // Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
 	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -53,9 +67,9 @@ type User struct {
 
 // RenderUser renders the user template
 func RenderUser(w io.Writer, p User) error {
-	tmpl, ok := templates["user"]
+	tmpl, ok := templates[Template.User]
 	if !ok {
-		return fmt.Errorf("template %q not found", "user")
+		return fmt.Errorf("template %q not found", Template.User)
 	}
 	return tmpl.Execute(w, p)
 }

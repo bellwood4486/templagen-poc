@@ -171,13 +171,13 @@ func TestEmit_BasicScaffoldAndTypes(t *testing.T) {
 		t.Fatalf("RenderTpl result not error")
 	}
 
-	// 汎用Render関数: Render(w io.Writer, name string, data any) error
+	// 汎用Render関数: Render(w io.Writer, name TemplateName, data any) error
 	render := findFunc(f, "Render")
 	if render == nil || len(render.Type.Params.List) != 3 {
 		t.Fatalf("Render signature not found")
 	}
-	if id, ok := render.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "string" {
-		t.Fatalf("Render second param not string")
+	if id, ok := render.Type.Params.List[1].Type.(*ast.Ident); !ok || id.Name != "TemplateName" {
+		t.Fatalf("Render second param not TemplateName")
 	}
 	if id, ok := render.Type.Params.List[2].Type.(*ast.Ident); !ok || id.Name != "any" {
 		t.Fatalf("Render third param not any")
