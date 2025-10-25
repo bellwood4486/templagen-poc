@@ -41,6 +41,19 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
+// Render renders a template by name with the given data
+func Render(w io.Writer, name string, data any) error {
+	tmpl, ok := templates[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return tmpl.Execute(w, data)
+}
+
+// ============================================================
+// basic_types template
+// ============================================================
+
 // Basic_types represents parameters for basic_types template
 type Basic_types struct {
 	Active bool
@@ -50,6 +63,19 @@ type Basic_types struct {
 	Price float64
 	Score int64
 }
+
+// RenderBasic_types renders the basic_types template
+func RenderBasic_types(w io.Writer, p Basic_types) error {
+	tmpl, ok := templates["basic_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "basic_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// complex_types template
+// ============================================================
 
 type Complex_typesItemsItem struct {
 	ID int64
@@ -71,6 +97,19 @@ type Complex_types struct {
 	Records []Complex_typesRecordsItem
 }
 
+// RenderComplex_types renders the complex_types template
+func RenderComplex_types(w io.Writer, p Complex_types) error {
+	tmpl, ok := templates["complex_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "complex_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// map_types template
+// ============================================================
+
 // Map_types represents parameters for map_types template
 type Map_types struct {
 	Counters map[string]int
@@ -78,6 +117,19 @@ type Map_types struct {
 	Metadata map[string]string
 	Prices map[string]float64
 }
+
+// RenderMap_types renders the map_types template
+func RenderMap_types(w io.Writer, p Map_types) error {
+	tmpl, ok := templates["map_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "map_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// pointer_types template
+// ============================================================
 
 // Pointer_types represents parameters for pointer_types template
 type Pointer_types struct {
@@ -87,6 +139,19 @@ type Pointer_types struct {
 	PhoneNumber *string
 }
 
+// RenderPointer_types renders the pointer_types template
+func RenderPointer_types(w io.Writer, p Pointer_types) error {
+	tmpl, ok := templates["pointer_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "pointer_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// slice_types template
+// ============================================================
+
 // Slice_types represents parameters for slice_types template
 type Slice_types struct {
 	CategoryIDs []int
@@ -94,6 +159,19 @@ type Slice_types struct {
 	Ratings []float64
 	Tags []string
 }
+
+// RenderSlice_types renders the slice_types template
+func RenderSlice_types(w io.Writer, p Slice_types) error {
+	tmpl, ok := templates["slice_types"]
+	if !ok {
+		return fmt.Errorf("template %q not found", "slice_types")
+	}
+	return tmpl.Execute(w, p)
+}
+
+// ============================================================
+// struct_types template
+// ============================================================
 
 type Struct_typesProduct struct {
 	InStock bool
@@ -113,51 +191,6 @@ type Struct_types struct {
 	User Struct_typesUser
 }
 
-// RenderBasic_types renders the basic_types template
-func RenderBasic_types(w io.Writer, p Basic_types) error {
-	tmpl, ok := templates["basic_types"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "basic_types")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderComplex_types renders the complex_types template
-func RenderComplex_types(w io.Writer, p Complex_types) error {
-	tmpl, ok := templates["complex_types"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "complex_types")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderMap_types renders the map_types template
-func RenderMap_types(w io.Writer, p Map_types) error {
-	tmpl, ok := templates["map_types"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "map_types")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderPointer_types renders the pointer_types template
-func RenderPointer_types(w io.Writer, p Pointer_types) error {
-	tmpl, ok := templates["pointer_types"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "pointer_types")
-	}
-	return tmpl.Execute(w, p)
-}
-
-// RenderSlice_types renders the slice_types template
-func RenderSlice_types(w io.Writer, p Slice_types) error {
-	tmpl, ok := templates["slice_types"]
-	if !ok {
-		return fmt.Errorf("template %q not found", "slice_types")
-	}
-	return tmpl.Execute(w, p)
-}
-
 // RenderStruct_types renders the struct_types template
 func RenderStruct_types(w io.Writer, p Struct_types) error {
 	tmpl, ok := templates["struct_types"]
@@ -167,11 +200,3 @@ func RenderStruct_types(w io.Writer, p Struct_types) error {
 	return tmpl.Execute(w, p)
 }
 
-// Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := templates[name]
-	if !ok {
-		return fmt.Errorf("template %q not found", name)
-	}
-	return tmpl.Execute(w, data)
-}

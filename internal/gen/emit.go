@@ -122,9 +122,24 @@ func Emit(units []Unit) (string, error) {
 	write(&b, "\treturn templates\n")
 	write(&b, "}\n\n")
 
-	// 各テンプレート用の名前付き型を生成
+	// 汎用Render関数（共通部分に配置）
+	write(&b, "// Render renders a template by name with the given data\n")
+	write(&b, "func Render(w io.Writer, name string, data any) error {\n")
+	write(&b, "\ttmpl, ok := templates[name]\n")
+	write(&b, "\tif !ok {\n")
+	write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", name)\n")
+	write(&b, "\t}\n")
+	write(&b, "\treturn tmpl.Execute(w, data)\n")
+	write(&b, "}\n\n")
+
+	// 各テンプレートごとにブロックを生成
 	generatedTypes := make(map[string]bool)
 	for _, tmpl := range templates {
+		// テンプレートブロックのセパレータ
+		write(&b, "// ============================================================\n")
+		write(&b, "// %s template\n", tmpl.name)
+		write(&b, "// ============================================================\n\n")
+
 		// 名前付き型の生成
 		for _, namedType := range tmpl.typed.NamedTypes {
 			// 型名の衝突を避けるため、プレフィックスを付ける
@@ -158,10 +173,8 @@ func Emit(units []Unit) (string, error) {
 			write(&b, "\t%s %s\n", field.Name, goType)
 		}
 		write(&b, "}\n\n")
-	}
 
-	// 各テンプレート用のRender関数
-	for _, tmpl := range templates {
+		// Render関数の生成
 		funcName := "Render" + tmpl.typeName
 		write(&b, "// %s renders the %s template\n", funcName, tmpl.name)
 		write(&b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
@@ -172,16 +185,6 @@ func Emit(units []Unit) (string, error) {
 		write(&b, "\treturn tmpl.Execute(w, p)\n")
 		write(&b, "}\n\n")
 	}
-
-	// 汎用Render関数
-	write(&b, "// Render renders a template by name with the given data\n")
-	write(&b, "func Render(w io.Writer, name string, data any) error {\n")
-	write(&b, "\ttmpl, ok := templates[name]\n")
-	write(&b, "\tif !ok {\n")
-	write(&b, "\t\treturn fmt.Errorf(\"template %%q not found\", name)\n")
-	write(&b, "\t}\n")
-	write(&b, "\treturn tmpl.Execute(w, data)\n")
-	write(&b, "}\n")
 
 	return b.String(), nil
 }

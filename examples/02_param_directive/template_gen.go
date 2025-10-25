@@ -20,6 +20,19 @@ func Templates() map[string]*template.Template {
 	return templates
 }
 
+// Render renders a template by name with the given data
+func Render(w io.Writer, name string, data any) error {
+	tmpl, ok := templates[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return tmpl.Execute(w, data)
+}
+
+// ============================================================
+// user template
+// ============================================================
+
 type UserItemsItem struct {
 	ID int64
 	Price float64
@@ -47,11 +60,3 @@ func RenderUser(w io.Writer, p User) error {
 	return tmpl.Execute(w, p)
 }
 
-// Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
-	tmpl, ok := templates[name]
-	if !ok {
-		return fmt.Errorf("template %q not found", name)
-	}
-	return tmpl.Execute(w, data)
-}
