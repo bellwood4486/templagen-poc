@@ -1,12 +1,490 @@
 # templagen
 
+**[English version below](#english)** | **[英語版は下にあります](#english)**
+
+---
+
+## 日本語
+
+Go テンプレートファイルから型安全なテンプレート描画関数を生成する Go コードジェネレータです。
+
+### 概要
+
+`templagen` は Go テンプレートファイルを解析し、パラメータの型を自動推論または明示的な型指定により判定して、型安全な Go コードを生成します。これにより実行時の型エラーを排除し、テンプレートパラメータに対する IDE の自動補完機能を提供します。
+
+### 特徴
+
+- **型推論**: テンプレート構文からパラメータの型を自動推論（例: `.User.Name` → `string`）
+- **明示的な型ディレクティブ**: `@param` ディレクティブによる複雑な型の指定をサポート
+- **型安全性**: 強く型付けされた構造体と描画関数を生成
+- **複数テンプレート**: 単一または複数のテンプレートファイルを一度に処理
+- **go generate 統合**: Go のコード生成ワークフローにシームレスに統合
+- **柔軟な描画**: 型安全な描画と動的な描画の両方のオプションを提供
+
+### インストール
+
+```bash
+go install github.com/bellwood4486/templagen-poc/cmd/templagen@latest
+```
+
+プロジェクトに追加する場合:
+
+```bash
+go get github.com/bellwood4486/templagen-poc
+```
+
+### 使い方
+
+#### 基本的な例
+
+1. テンプレートファイル `templates/email.tmpl` を作成:
+
+```html
+<h1>Hello {{ .User.Name }}</h1>
+<p>{{ .Message }}</p>
+```
+
+2. Go ファイル `gen.go` に generate ディレクティブを追加:
+
+```go
+package main
+
+//go:generate templagen -in templates/email.tmpl -pkg main -out template_gen.go
+```
+
+3. コード生成を実行:
+
+```bash
+go generate
+```
+
+4. 生成された型安全なコードを使用:
+
+```go
+package main
+
+import (
+    "bytes"
+    "fmt"
+)
+
+func main() {
+    var buf bytes.Buffer
+    _ = RenderEmail(&buf, Email{
+        User:    EmailUser{Name: "Alice"},
+        Message: "Welcome!",
+    })
+    fmt.Println(buf.String())
+}
+```
+
+#### 高度な例: 型ディレクティブ
+
+複雑な型の場合、テンプレート `templates/user.tmpl` で `@param` ディレクティブを使用します:
+
+```html
+{{/* @param User.Age int */}}
+{{/* @param User.Email *string */}}
+{{/* @param Items []struct{ID int64; Title string; Price float64} */}}
+<div class="user-profile">
+  <h1>{{ .User.Name }}</h1>
+  <p>Age: {{ .User.Age }}</p>
+  {{ if .User.Email }}<p>Email: {{ .User.Email }}</p>{{ end }}
+</div>
+
+<div class="items">
+  <h2>Items</h2>
+  <ul>
+  {{ range .Items }}
+    <li>#{{ .ID }}: {{ .Title }} - ${{ .Price }}</li>
+  {{ end }}
+  </ul>
+</div>
+```
+
+#### 複数テンプレート
+
+複数のテンプレートファイルを一度に処理:
+
+```go
+//go:generate templagen -in "templates/*.tmpl" -pkg main -out templates_gen.go
+```
+
+または明示的にファイルを指定:
+
+```go
+//go:generate templagen -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
+```
+
+### `@param` ディレクティブリファレンス
+
+`@param` ディレクティブを使用すると、テンプレートパラメータの型を明示的に指定でき、自動型推論を上書きできます。これは特定の整数サイズ、オプショナルフィールド（ポインタ）、構造化データなどの複雑な型に不可欠です。
+
+#### 構文
+
+```go
+{{/* @param <フィールドパス> <型> */}}
+```
+
+- `<フィールドパス>`: ドット区切りのフィールドパス（例: `User.Name`, `Items`, `Config.Database.Host`）
+- `<型>`: Go の型表現（サポートされる型は下記参照）
+
+#### サポートされる型
+
+##### ✅ 完全サポート
+
+**1. 基本型**
+```go
+{{/* @param Name string */}}
+{{/* @param Age int */}}
+{{/* @param Count int64 */}}
+{{/* @param Price float64 */}}
+{{/* @param Active bool */}}
+{{/* @param CreatedAt time.Time */}}  // 自動的に "time" をインポート
+```
+
+サポートされる基本型: `string`, `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `byte`, `rune`, `any`, `time.Time`
+
+**2. ポインタ型（オプショナル/Null許可）**
+```go
+{{/* @param Email *string */}}
+{{/* @param Score *int */}}
+{{/* @param Discount *float64 */}}
+```
+
+任意の基本型を `*` でラップしてオプショナルにできます。
+
+**3. スライス**
+```go
+{{/* @param Tags []string */}}
+{{/* @param IDs []int */}}
+{{/* @param Prices []float64 */}}
+```
+
+**4. マップ**
+```go
+{{/* @param Metadata map[string]string */}}
+{{/* @param Counters map[string]int */}}
+{{/* @param Settings map[string]bool */}}
+```
+
+**注意:** マップのキーは常に `string` である必要があります。他のキー型はサポートされていません。
+
+**5. ネストされた構造体フィールド（ドット記法）**
+```go
+{{/* @param User.ID int64 */}}
+{{/* @param User.Name string */}}
+{{/* @param User.Email string */}}
+
+{{/* @param Config.Database.Host string */}}
+{{/* @param Config.Database.Port int */}}
+```
+
+ネストされた構造体型を生成:
+```go
+type All_typesUser struct {
+    ID    int64
+    Name  string
+    Email string
+}
+```
+
+**6. 構造体のスライス**
+```go
+{{/* @param Items []struct{ID int64; Title string; Price float64} */}}
+{{/* @param Records []struct{Name string; Tags []string; Score *int} */}}
+```
+
+構造体フィールドはセミコロン (`;`) で区切ります。構造体フィールド内にネストされたスライス/マップを含めることができます。
+
+**7. オプショナルスライス**
+```go
+{{/* @param OptionalTags *[]string */}}
+```
+
+##### ❌ 既知の制限事項
+
+**1. ネストされたスライス/マップ**
+```go
+// ❌ 動作しません - 無効な構文を生成
+{{/* @param Matrix [][]string */}}
+{{/* @param Groups map[string][]string */}}
+{{/* @param Data []map[string]int */}}
+```
+
+**回避策:** 構造体のスライスを使用:
+```go
+// ✅ 動作します
+{{/* @param Groups []struct{Key string; Values []string} */}}
+```
+
+**2. トップレベルでのインライン構造体定義**
+```go
+// ❌ 動作しません - 無効な Go コードを生成
+{{/* @param User struct{ID int64; Name string} */}}
+```
+
+**回避策:** ドット記法を使用:
+```go
+// ✅ 動作します
+{{/* @param User.ID int64 */}}
+{{/* @param User.Name string */}}
+```
+
+**3. インライン構造体を持つ深くネストされたパス**
+```go
+// ❌ 動作しません - ドットを含む型名を生成
+{{/* @param Complex.Nested.User struct{ID int64; Name string} */}}
+```
+
+**回避策:** 構造をフラット化するか、よりシンプルなフィールドパスを使用してください。
+
+**4. 文字列以外のマップキー**
+```go
+// ❌ サポートされていません
+{{/* @param Lookup map[int]string */}}
+```
+
+**5. 構造体フィールド構文**
+```go
+// ❌ 間違い - カンマは使用できません
+{{/* @param Item struct{Name string, ID int} */}}
+
+// ✅ 正しい - セミコロンを使用
+{{/* @param Item struct{Name string; ID int} */}}
+```
+
+#### ベストプラクティス
+
+✅ **推奨:**
+- ネストされた構造にはドット記法を使用: `User.Name`, `Config.Database.Host`
+- 複雑なデータのコレクションには `[]struct{...}` を使用
+- オプショナルフィールドにはポインタ型 (`*Type`) を使用
+- フィールドパスは比較的フラットに（1〜2階層の深さ）
+- 構造体フィールドの区切りにはセミコロンを使用
+
+❌ **非推奨:**
+- トップレベルでのインライン `struct{...}` を使用しない
+- スライス/マップを直接ネストしない（`[][]T`, `map[K][]V`）
+- 深いフィールドパスとインライン構造体定義を組み合わせない
+- 構造体フィールド定義でカンマを使用しない
+
+#### 完全な例
+
+サポートされるすべての型パターンと制限事項を示す包括的な例については、[`examples/05_all_param_types`](./examples/05_all_param_types) を参照してください。
+
+### コマンドラインオプション
+
+```
+templagen -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
+
+オプション:
+  -in string
+        入力パターン（glob サポート、例: "*.tmpl" または "templates/*.tmpl"）
+        複数ファイルはカンマ区切りで指定可能
+  -pkg string
+        出力パッケージ名
+  -out string
+        出力 .go ファイルパス
+  -exclude string
+        除外パターン（オプション、ファイルのベース名に適用）
+```
+
+### 動作原理
+
+1. **スキャン**: テンプレートファイルを解析し、フィールドアクセスパターンを抽出（例: `.User.Name`, `.Items[0].ID`）
+2. **型解決**:
+   - 明示的な `@param` 型ディレクティブを適用
+   - テンプレート構文から型を推論（単純なフィールドは文字列、`range` からコレクションを推論）
+3. **コード生成**: 以下を生成:
+   - 型安全なパラメータ構造体
+   - テンプレート解析関数
+   - 型安全な `Render<テンプレート名>()` 関数
+   - 動的なユースケース用の汎用 `Render()` 関数
+
+### 生成されるコード構造
+
+各テンプレートに対して、`templagen` は以下を生成します:
+
+```go
+// パラメータ構造体（型安全）
+type Email struct {
+    User    EmailUser
+    Message string
+}
+
+// テンプレート関数
+func EmailTemplate() *template.Template { ... }
+
+// 型安全な描画関数
+func RenderEmail(w io.Writer, params Email) error { ... }
+
+// 汎用描画関数（動的使用向け）
+func Render(w io.Writer, name string, params map[string]any) error { ... }
+```
+
+### サポートされるテンプレート構文
+
+`templagen` は以下の Go テンプレート構文パターンをサポートしています。テンプレートスキャナはこれらのパターンを解析して自動的に型を推論します:
+
+#### 1. 基本的なフィールド参照
+
+```go
+{{ .Title }}
+```
+
+生成される構造体に `string` フィールドを作成します。
+
+#### 2. ネストされたフィールド参照
+
+```go
+{{ .User.Name }}
+{{ .Author.Email }}
+```
+
+`string` フィールドを持つネストされた構造体型を作成します。
+
+#### 3. 条件文（if）
+
+```go
+{{ if .Status }}
+  <p>Status: {{ .Status }}</p>
+{{ end }}
+```
+
+条件内のフィールドは、子フィールドがある場合は構造体として推論され、それ以外は `string` として推論されます。
+
+#### 4. with 文と else 句
+
+```go
+{{ with .Summary }}
+  <p>{{ .Content }}</p>
+{{ else }}
+  <p>{{ .DefaultMessage }}</p>
+{{ end }}
+```
+
+ブロック内のドット (`.`) コンテキストを変更します。スキャナはスコープの変更を正しく追跡します。
+
+#### 5. スライスの range
+
+```go
+{{ range .Items }}
+  <li>{{ .Title }} - {{ .ID }}</li>
+{{ end }}
+```
+
+`.Items` を range 本体内のフィールドを持つスライス型 `[]struct{...}` として推論します。
+
+#### 6. index 関数によるマップアクセス
+
+```go
+{{ index .Meta "key" }}
+{{ index .Meta "env" }}
+```
+
+`index` 関数を使用する場合、`.Meta` を `map[string]string` として推論します。
+
+#### 7. ネストされた構造（with + range）
+
+```go
+{{ with .Project }}
+  <h3>{{ .Name }}</h3>
+  {{ range .Tasks }}
+    <p>{{ .Title }}</p>
+  {{ end }}
+{{ end }}
+```
+
+`with` と `range` を組み合わせて、スライスフィールドを持つネストされた構造体階層を作成します。
+
+#### 8. 深くネストされたパス
+
+```go
+{{ .Company.Department.Team.Manager.Name }}
+```
+
+完全なパスに従って深くネストされた構造体型を作成します。
+
+#### 完全な例
+
+サポートされるすべての構文パターンを示す完全なテンプレートについては、[`examples/04_comprehensive_template`](./examples/04_comprehensive_template) を参照してください。
+
+### サンプル
+
+完全に動作するサンプルについては、[`examples/`](./examples) ディレクトリを確認してください:
+
+- [`01_basic`](./examples/01_basic): 型推論を使用した基本的な使用法
+- [`02_param_directive`](./examples/02_param_directive): 複雑な型に対する `@param` ディレクティブの使用
+- [`03_multi_template`](./examples/03_multi_template): 複数テンプレートの一括処理
+- [`04_comprehensive_template`](./examples/04_comprehensive_template): サポートされるすべてのテンプレート構文パターンを示す包括的な例
+- [`05_all_param_types`](./examples/05_all_param_types): サポートされるすべての `@param` 型と制限事項の完全なリファレンス
+
+サンプルの実行:
+
+```bash
+cd examples/01_basic
+go generate
+go run .
+```
+
+### プロジェクト構造
+
+```
+.
+├── cmd/templagen/          # CLI ツールのエントリポイント
+├── internal/
+│   ├── gen/               # コード生成ロジック
+│   ├── scan/              # テンプレートスキャンと解析
+│   ├── typing/            # 型推論と解決
+│   │   └── magic/         # マジックコメント（@param）の解析
+│   └── util/              # ユーティリティ関数
+└── examples/              # 使用例
+```
+
+### コントリビューション
+
+コントリビューションを歓迎します！プルリクエストを自由に提出してください。
+
+#### 開発
+
+1. リポジトリをクローン:
+```bash
+git clone https://github.com/bellwood4486/templagen-poc.git
+cd templagen-poc
+```
+
+2. テストの実行:
+```bash
+go test ./...
+```
+
+3. ビルド:
+```bash
+go build ./cmd/templagen
+```
+
+### ライセンス
+
+このプロジェクトは MIT ライセンスのもとでライセンスされています - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
+
+### 謝辞
+
+Go の [`text/template`](https://pkg.go.dev/text/template) および [`html/template`](https://pkg.go.dev/html/template) パッケージを使用して構築されています。
+
+---
+
+<a name="english"></a>
+
+## English
+
 A Go code generator that creates type-safe template rendering functions from Go template files.
 
-## Overview
+### Overview
 
 `templagen` analyzes your Go template files, automatically infers or uses explicit parameter types, and generates type-safe Go code with structs and render functions. This eliminates runtime type errors and provides IDE autocompletion for template parameters.
 
-## Features
+### Features
 
 - **Type Inference**: Automatically infers parameter types from template syntax (e.g., `.User.Name` → `string`)
 - **Explicit Type Directives**: Support for `@param` directives to specify complex types
@@ -15,7 +493,7 @@ A Go code generator that creates type-safe template rendering functions from Go 
 - **go generate Integration**: Seamlessly integrates with Go's code generation workflow
 - **Flexible Rendering**: Provides both type-safe and dynamic rendering options
 
-## Installation
+### Installation
 
 ```bash
 go install github.com/bellwood4486/templagen-poc/cmd/templagen@latest
@@ -27,9 +505,9 @@ Or add to your project:
 go get github.com/bellwood4486/templagen-poc
 ```
 
-## Usage
+### Usage
 
-### Basic Example
+#### Basic Example
 
 1. Create a template file `templates/email.tmpl`:
 
@@ -72,7 +550,7 @@ func main() {
 }
 ```
 
-### Advanced Example: Type Directives
+#### Advanced Example: Type Directives
 
 For complex types, use `@param` directives in your template `templates/user.tmpl`:
 
@@ -96,7 +574,7 @@ For complex types, use `@param` directives in your template `templates/user.tmpl
 </div>
 ```
 
-### Multiple Templates
+#### Multiple Templates
 
 Process multiple template files at once:
 
@@ -110,11 +588,11 @@ Or specify files explicitly:
 //go:generate templagen -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
 ```
 
-## `@param` Directive Reference
+### `@param` Directive Reference
 
 The `@param` directive allows you to explicitly specify types for template parameters, overriding automatic type inference. This is essential for complex types like specific integer sizes, optional fields (pointers), and structured data.
 
-### Syntax
+#### Syntax
 
 ```go
 {{/* @param <FieldPath> <Type> */}}
@@ -123,9 +601,9 @@ The `@param` directive allows you to explicitly specify types for template param
 - `<FieldPath>`: Dot-separated field path (e.g., `User.Name`, `Items`, `Config.Database.Host`)
 - `<Type>`: Go type expression (see supported types below)
 
-### Supported Types
+#### Supported Types
 
-#### ✅ Fully Supported
+##### ✅ Fully Supported
 
 **1. Basic Types**
 ```go
@@ -196,7 +674,7 @@ Struct fields are separated by semicolons (`;`). Can include nested slices/maps 
 {{/* @param OptionalTags *[]string */}}
 ```
 
-#### ❌ Known Limitations
+##### ❌ Known Limitations
 
 **1. Nested Slices/Maps**
 ```go
@@ -248,7 +726,7 @@ Struct fields are separated by semicolons (`;`). Can include nested slices/maps 
 {{/* @param Item struct{Name string; ID int} */}}
 ```
 
-### Best Practices
+#### Best Practices
 
 ✅ **DO:**
 - Use dot notation for nested structures: `User.Name`, `Config.Database.Host`
@@ -263,11 +741,11 @@ Struct fields are separated by semicolons (`;`). Can include nested slices/maps 
 - Don't combine deep field paths with inline struct definitions
 - Don't use commas in struct field definitions
 
-### Complete Example
+#### Complete Example
 
 See [`examples/05_all_param_types`](./examples/05_all_param_types) for a comprehensive example demonstrating all supported type patterns and limitations.
 
-## Command Line Options
+### Command Line Options
 
 ```
 templagen -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
@@ -284,7 +762,7 @@ Options:
         Exclude pattern (optional, applied to file basenames)
 ```
 
-## How It Works
+### How It Works
 
 1. **Scan**: Parse template files and extract field access patterns (e.g., `.User.Name`, `.Items[0].ID`)
 2. **Type Resolution**:
@@ -296,7 +774,7 @@ Options:
    - Type-safe `Render<TemplateName>()` functions
    - Generic `Render()` function for dynamic use cases
 
-## Generated Code Structure
+### Generated Code Structure
 
 For each template, `templagen` generates:
 
@@ -317,11 +795,11 @@ func RenderEmail(w io.Writer, params Email) error { ... }
 func Render(w io.Writer, name string, params map[string]any) error { ... }
 ```
 
-## Supported Template Syntax
+### Supported Template Syntax
 
 `templagen` supports the following Go template syntax patterns. The template scanner analyzes these patterns to infer types automatically:
 
-### 1. Basic Field Reference
+#### 1. Basic Field Reference
 
 ```go
 {{ .Title }}
@@ -329,7 +807,7 @@ func Render(w io.Writer, name string, params map[string]any) error { ... }
 
 Creates a `string` field in the generated struct.
 
-### 2. Nested Field Reference
+#### 2. Nested Field Reference
 
 ```go
 {{ .User.Name }}
@@ -338,7 +816,7 @@ Creates a `string` field in the generated struct.
 
 Creates nested struct types with `string` fields.
 
-### 3. Conditional Statements (if)
+#### 3. Conditional Statements (if)
 
 ```go
 {{ if .Status }}
@@ -348,7 +826,7 @@ Creates nested struct types with `string` fields.
 
 The field in the condition is inferred as a struct if it has child fields, otherwise as `string`.
 
-### 4. With Statement and Else Clause
+#### 4. With Statement and Else Clause
 
 ```go
 {{ with .Summary }}
@@ -360,7 +838,7 @@ The field in the condition is inferred as a struct if it has child fields, other
 
 Changes the dot (`.`) context within the block. The scanner tracks scope changes correctly.
 
-### 5. Range Over Slice
+#### 5. Range Over Slice
 
 ```go
 {{ range .Items }}
@@ -370,7 +848,7 @@ Changes the dot (`.`) context within the block. The scanner tracks scope changes
 
 Infers `.Items` as a slice type `[]struct{...}` with fields from the range body.
 
-### 6. Map Access with Index Function
+#### 6. Map Access with Index Function
 
 ```go
 {{ index .Meta "key" }}
@@ -379,7 +857,7 @@ Infers `.Items` as a slice type `[]struct{...}` with fields from the range body.
 
 Infers `.Meta` as `map[string]string` when using the `index` function.
 
-### 7. Nested Structures (with + range)
+#### 7. Nested Structures (with + range)
 
 ```go
 {{ with .Project }}
@@ -392,7 +870,7 @@ Infers `.Meta` as `map[string]string` when using the `index` function.
 
 Combines `with` and `range` to create nested struct hierarchies with slice fields.
 
-### 8. Deep Nested Paths
+#### 8. Deep Nested Paths
 
 ```go
 {{ .Company.Department.Team.Manager.Name }}
@@ -400,11 +878,11 @@ Combines `with` and `range` to create nested struct hierarchies with slice field
 
 Creates deeply nested struct types following the full path.
 
-### Complete Example
+#### Complete Example
 
 See [`examples/04_comprehensive_template`](./examples/04_comprehensive_template) for a complete template demonstrating all supported syntax patterns.
 
-## Examples
+### Examples
 
 Check the [`examples/`](./examples) directory for complete working examples:
 
@@ -422,7 +900,7 @@ go generate
 go run .
 ```
 
-## Project Structure
+### Project Structure
 
 ```
 .
@@ -436,11 +914,11 @@ go run .
 └── examples/              # Usage examples
 ```
 
-## Contributing
+### Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Development
+#### Development
 
 1. Clone the repository:
 ```bash
@@ -458,10 +936,10 @@ go test ./...
 go build ./cmd/templagen
 ```
 
-## License
+### License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+### Acknowledgments
 
 Built with Go's [`text/template`](https://pkg.go.dev/text/template) and [`html/template`](https://pkg.go.dev/html/template) packages.
