@@ -97,7 +97,7 @@ go run .
 The `go generate` command creates `template_gen.go` containing:
 - Type-safe struct definitions for each template (e.g., `Basic_types`, `Pointer_types`)
 - Dedicated render functions for each template (e.g., `RenderBasic_types()`, `RenderPointer_types()`)
-- Proper imports for referenced packages
+- Standard library imports (io, text/template, embed, fmt)
 - Template map with all compiled templates
 
 ## File Structure
