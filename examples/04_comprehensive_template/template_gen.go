@@ -8,6 +8,16 @@ import (
 	"text/template"
 )
 
+// TemplateName is a type-safe template name
+type TemplateName string
+
+const (
+	TemplateNameAdvanced TemplateName = "advanced"
+	TemplateNameBasic_fields TemplateName = "basic_fields"
+	TemplateNameCollections TemplateName = "collections"
+	TemplateNameControl_flow TemplateName = "control_flow"
+)
+
 //go:embed templates/advanced.tmpl
 var advancedTplSource string
 
@@ -20,20 +30,20 @@ var collectionsTplSource string
 //go:embed templates/control_flow.tmpl
 var control_flowTplSource string
 
-var templates = map[string]*template.Template{
-	"advanced": template.Must(template.New("advanced").Option("missingkey=error").Parse(advancedTplSource)),
-	"basic_fields": template.Must(template.New("basic_fields").Option("missingkey=error").Parse(basic_fieldsTplSource)),
-	"collections": template.Must(template.New("collections").Option("missingkey=error").Parse(collectionsTplSource)),
-	"control_flow": template.Must(template.New("control_flow").Option("missingkey=error").Parse(control_flowTplSource)),
+var templates = map[TemplateName]*template.Template{
+	TemplateNameAdvanced: template.Must(template.New("advanced").Option("missingkey=error").Parse(advancedTplSource)),
+	TemplateNameBasic_fields: template.Must(template.New("basic_fields").Option("missingkey=error").Parse(basic_fieldsTplSource)),
+	TemplateNameCollections: template.Must(template.New("collections").Option("missingkey=error").Parse(collectionsTplSource)),
+	TemplateNameControl_flow: template.Must(template.New("control_flow").Option("missingkey=error").Parse(control_flowTplSource)),
 }
 
 // Templates returns a map of all templates
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
 	return templates
 }
 
 // Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
 	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -80,9 +90,9 @@ type Advanced struct {
 
 // RenderAdvanced renders the advanced template
 func RenderAdvanced(w io.Writer, p Advanced) error {
-	tmpl, ok := templates["advanced"]
+	tmpl, ok := templates[TemplateNameAdvanced]
 	if !ok {
-		return fmt.Errorf("template %q not found", "advanced")
+		return fmt.Errorf("template %q not found", TemplateNameAdvanced)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -104,9 +114,9 @@ type Basic_fields struct {
 
 // RenderBasic_fields renders the basic_fields template
 func RenderBasic_fields(w io.Writer, p Basic_fields) error {
-	tmpl, ok := templates["basic_fields"]
+	tmpl, ok := templates[TemplateNameBasic_fields]
 	if !ok {
-		return fmt.Errorf("template %q not found", "basic_fields")
+		return fmt.Errorf("template %q not found", TemplateNameBasic_fields)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -129,9 +139,9 @@ type Collections struct {
 
 // RenderCollections renders the collections template
 func RenderCollections(w io.Writer, p Collections) error {
-	tmpl, ok := templates["collections"]
+	tmpl, ok := templates[TemplateNameCollections]
 	if !ok {
-		return fmt.Errorf("template %q not found", "collections")
+		return fmt.Errorf("template %q not found", TemplateNameCollections)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -154,9 +164,9 @@ type Control_flow struct {
 
 // RenderControl_flow renders the control_flow template
 func RenderControl_flow(w io.Writer, p Control_flow) error {
-	tmpl, ok := templates["control_flow"]
+	tmpl, ok := templates[TemplateNameControl_flow]
 	if !ok {
-		return fmt.Errorf("template %q not found", "control_flow")
+		return fmt.Errorf("template %q not found", TemplateNameControl_flow)
 	}
 	return tmpl.Execute(w, p)
 }

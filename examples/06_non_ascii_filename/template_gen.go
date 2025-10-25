@@ -8,20 +8,27 @@ import (
 	"text/template"
 )
 
+// TemplateName is a type-safe template name
+type TemplateName string
+
+const (
+	TemplateNameメール TemplateName = "メール"
+)
+
 //go:embed templates/メール.tmpl
 var メールTplSource string
 
-var templates = map[string]*template.Template{
-	"メール": template.Must(template.New("メール").Option("missingkey=error").Parse(メールTplSource)),
+var templates = map[TemplateName]*template.Template{
+	TemplateNameメール: template.Must(template.New("メール").Option("missingkey=error").Parse(メールTplSource)),
 }
 
 // Templates returns a map of all templates
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
 	return templates
 }
 
 // Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
 	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -40,9 +47,9 @@ type メール struct {
 
 // Renderメール renders the メール template
 func Renderメール(w io.Writer, p メール) error {
-	tmpl, ok := templates["メール"]
+	tmpl, ok := templates[TemplateNameメール]
 	if !ok {
-		return fmt.Errorf("template %q not found", "メール")
+		return fmt.Errorf("template %q not found", TemplateNameメール)
 	}
 	return tmpl.Execute(w, p)
 }

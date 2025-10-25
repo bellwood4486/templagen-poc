@@ -8,20 +8,27 @@ import (
 	"text/template"
 )
 
+// TemplateName is a type-safe template name
+type TemplateName string
+
+const (
+	TemplateNameTpl TemplateName = "tpl"
+)
+
 //go:embed tpl.tmpl
 var tplTplSource string
 
-var templates = map[string]*template.Template{
-	"tpl": template.Must(template.New("tpl").Option("missingkey=error").Parse(tplTplSource)),
+var templates = map[TemplateName]*template.Template{
+	TemplateNameTpl: template.Must(template.New("tpl").Option("missingkey=error").Parse(tplTplSource)),
 }
 
 // Templates returns a map of all templates
-func Templates() map[string]*template.Template {
+func Templates() map[TemplateName]*template.Template {
 	return templates
 }
 
 // Render renders a template by name with the given data
-func Render(w io.Writer, name string, data any) error {
+func Render(w io.Writer, name TemplateName, data any) error {
 	tmpl, ok := templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
@@ -45,9 +52,9 @@ type Tpl struct {
 
 // RenderTpl renders the tpl template
 func RenderTpl(w io.Writer, p Tpl) error {
-	tmpl, ok := templates["tpl"]
+	tmpl, ok := templates[TemplateNameTpl]
 	if !ok {
-		return fmt.Errorf("template %q not found", "tpl")
+		return fmt.Errorf("template %q not found", TemplateNameTpl)
 	}
 	return tmpl.Execute(w, p)
 }
