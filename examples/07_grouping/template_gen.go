@@ -13,6 +13,7 @@ type TemplateName string
 
 // Template provides type-safe access to template names
 var Template = struct {
+	Footer             TemplateName
 	MailAccountCreated struct {
 		Content TemplateName
 		Title   TemplateName
@@ -26,6 +27,7 @@ var Template = struct {
 		Title   TemplateName
 	}
 }{
+	Footer: "footer",
 	MailAccountCreated: struct {
 		Content TemplateName
 		Title   TemplateName
@@ -48,6 +50,9 @@ var Template = struct {
 		Title:   "mail_invite/title",
 	},
 }
+
+//go:embed templates/footer.tmpl
+var footerTplSource string
 
 //go:embed templates/02_mail_account_created/content.tmpl
 var mail_account_created_contentTplSource string
@@ -72,6 +77,7 @@ func newTemplate(name TemplateName, source string) *template.Template {
 }
 
 var templates = map[TemplateName]*template.Template{
+	Template.Footer:                     newTemplate(Template.Footer, footerTplSource),
 	Template.MailAccountCreated.Content: newTemplate(Template.MailAccountCreated.Content, mail_account_created_contentTplSource),
 	Template.MailAccountCreated.Title:   newTemplate(Template.MailAccountCreated.Title, mail_account_created_titleTplSource),
 	Template.MailArticleCreated.Content: newTemplate(Template.MailArticleCreated.Content, mail_article_created_contentTplSource),
@@ -92,6 +98,26 @@ func Render(w io.Writer, name TemplateName, data any) error {
 		return fmt.Errorf("template %q not found", name)
 	}
 	return tmpl.Execute(w, data)
+}
+
+// ============================================================
+// footer template
+// ============================================================
+
+// Footer represents parameters for footer template
+type Footer struct {
+	Email    string
+	SiteName string
+	Year     string
+}
+
+// RenderFooter renders the footer template
+func RenderFooter(w io.Writer, p Footer) error {
+	tmpl, ok := templates[Template.Footer]
+	if !ok {
+		return fmt.Errorf("template %q not found", Template.Footer)
+	}
+	return tmpl.Execute(w, p)
 }
 
 // ============================================================

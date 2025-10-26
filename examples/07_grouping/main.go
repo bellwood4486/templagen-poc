@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Example: Template Grouping ===")
+	fmt.Println("=== Example: Template Grouping (Mixed Flat + Grouped) ===")
 	fmt.Println()
 
 	// Use grouped templates - MailInvite
@@ -54,6 +54,17 @@ func main() {
 		ArticleTitle: "10 Tips for Better Go Code",
 	})
 	fmt.Println("Title:", articleTitleBuf.String())
+	fmt.Println()
+
+	// Use flat template
+	fmt.Println("--- Footer (Flat Template) ---")
+	var footerBuf bytes.Buffer
+	_ = RenderFooter(&footerBuf, Footer{
+		SiteName: "MyApp",
+		Year:     "2025",
+		Email:    "support@myapp.com",
+	})
+	fmt.Println(footerBuf.String())
 	fmt.Println()
 
 	// Show all available templates
