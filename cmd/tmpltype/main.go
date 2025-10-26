@@ -75,22 +75,31 @@ func main() {
 func resolveInputFiles(pattern string, exclude string) ([]string, error) {
 	var files []string
 
-	// カンマ区切りのチェック
+	// カンマ区切りでパターンを分割
+	patterns := []string{pattern}
 	if strings.Contains(pattern, ",") {
-		// カンマ区切りの場合
-		for _, p := range strings.Split(pattern, ",") {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				files = append(files, p)
-			}
+		patterns = strings.Split(pattern, ",")
+	}
+
+	// 各パターンをグロブ展開
+	for _, p := range patterns {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
 		}
-	} else {
-		// globパターンの場合
-		matches, err := filepath.Glob(pattern)
+
+		// グロブパターンとして展開を試みる
+		matches, err := filepath.Glob(p)
 		if err != nil {
 			return nil, err
 		}
-		files = matches
+
+		// マッチした場合は展開結果を使用、マッチしない場合はそのまま使用
+		if len(matches) > 0 {
+			files = append(files, matches...)
+		} else {
+			files = append(files, p)
+		}
 	}
 
 	// 除外パターンの適用
