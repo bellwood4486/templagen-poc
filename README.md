@@ -17,6 +17,7 @@ Go テンプレートファイルから型安全なテンプレート描画関�
 - **型推論**: テンプレート構文からパラメータの型を自動推論（例: `.User.Name` → `string`）
 - **明示的な型ディレクティブ**: `@param` ディレクティブによる複雑な型の指定をサポート
 - **型安全性**: 強く型付けされた構造体と描画関数を生成
+- **テンプレートのグループ化**: サブディレクトリでテンプレートを論理的にグループ化し、ネストされた名前空間を生成
 - **複数テンプレート**: 単一または複数のテンプレートファイルを一度に処理
 - **go generate 統合**: Go のコード生成ワークフローにシームレスに統合
 - **柔軟な描画**: 型安全な描画と動的な描画の両方のオプションを提供
@@ -114,6 +115,41 @@ func main() {
 
 ```go
 //go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
+```
+
+#### テンプレートのグループ化
+
+サブディレクトリでテンプレートを論理的にグループ化:
+
+```
+templates/
+├── footer.tmpl                  # フラットなテンプレート
+├── mail_invite/                 # グループ
+│   ├── title.tmpl
+│   └── content.tmpl
+└── mail_account_created/        # グループ
+    ├── title.tmpl
+    └── content.tmpl
+```
+
+生成されるコード:
+
+```go
+var Template = struct {
+    Footer             TemplateName  // フラット
+    MailInvite struct {              // グループ
+        Title   TemplateName
+        Content TemplateName
+    }
+    MailAccountCreated struct {      // グループ
+        Title   TemplateName
+        Content TemplateName
+    }
+}
+
+// 使用例
+RenderMailInviteTitle(w, MailInviteTitle{...})
+Render(w, Template.MailInvite.Title, data)
 ```
 
 ### `@param` ディレクティブリファレンス
@@ -512,6 +548,7 @@ func RenderNav(w io.Writer, p Nav) error { ... }
 - [`03_multi_template`](./examples/03_multi_template): 複数テンプレートの一括処理
 - [`04_comprehensive_template`](./examples/04_comprehensive_template): サポートされるすべてのテンプレート構文パターンを示す包括的な例
 - [`05_all_param_types`](./examples/05_all_param_types): サポートされるすべての `@param` 型と制限事項の完全なリファレンス
+- [`07_grouping`](./examples/07_grouping): テンプレートのグループ化（フラットとグループの混在）
 
 サンプルの実行:
 
@@ -582,6 +619,7 @@ A Go code generator that creates type-safe template rendering functions from Go 
 - **Type Inference**: Automatically infers parameter types from template syntax (e.g., `.User.Name` → `string`)
 - **Explicit Type Directives**: Support for `@param` directives to specify complex types
 - **Type Safety**: Generate strongly-typed structs and render functions
+- **Template Grouping**: Organize templates logically in subdirectories with nested namespaces
 - **Multiple Templates**: Process single or multiple template files at once
 - **go generate Integration**: Seamlessly integrates with Go's code generation workflow
 - **Flexible Rendering**: Provides both type-safe and dynamic rendering options
@@ -679,6 +717,41 @@ Or specify files explicitly:
 
 ```go
 //go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
+```
+
+#### Template Grouping
+
+Organize templates logically in subdirectories:
+
+```
+templates/
+├── footer.tmpl                  # Flat template
+├── mail_invite/                 # Group
+│   ├── title.tmpl
+│   └── content.tmpl
+└── mail_account_created/        # Group
+    ├── title.tmpl
+    └── content.tmpl
+```
+
+Generated code:
+
+```go
+var Template = struct {
+    Footer             TemplateName  // Flat
+    MailInvite struct {              // Group
+        Title   TemplateName
+        Content TemplateName
+    }
+    MailAccountCreated struct {      // Group
+        Title   TemplateName
+        Content TemplateName
+    }
+}
+
+// Usage
+RenderMailInviteTitle(w, MailInviteTitle{...})
+Render(w, Template.MailInvite.Title, data)
 ```
 
 ### `@param` Directive Reference
@@ -1077,6 +1150,7 @@ Check the [`examples/`](./examples) directory for complete working examples:
 - [`03_multi_template`](./examples/03_multi_template): Processing multiple templates at once
 - [`04_comprehensive_template`](./examples/04_comprehensive_template): Comprehensive example demonstrating all supported template syntax patterns
 - [`05_all_param_types`](./examples/05_all_param_types): Complete reference for all supported `@param` types and limitations
+- [`07_grouping`](./examples/07_grouping): Template grouping (mixed flat and grouped templates)
 
 Run examples:
 
