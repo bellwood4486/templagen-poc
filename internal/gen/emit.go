@@ -56,8 +56,8 @@ func (p *emitPrepared) allTemplates() []tmpl {
 	return all
 }
 
-// prepareTemplateData はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
-func prepareTemplateData(units []Unit) (*emitPrepared, error) {
+// prepare はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
+func prepare(units []Unit) (*emitPrepared, error) {
 	if len(units) == 0 {
 		return nil, fmt.Errorf("no units provided")
 	}
@@ -172,7 +172,7 @@ func organizeGroups(templates []tmpl) ([]tmplGroup, []tmpl) {
 // 単一テンプレートの場合も同じフォーマットで生成される
 func Emit(units []Unit) (string, error) {
 	// Phase 1: データ収集と準備
-	prepared, err := prepareTemplateData(units)
+	prepared, err := prepare(units)
 	if err != nil {
 		return "", err
 	}
