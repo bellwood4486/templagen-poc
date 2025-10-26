@@ -17,6 +17,7 @@ Go テンプレートファイルから型安全なテンプレート描画関�
 - **型推論**: テンプレート構文からパラメータの型を自動推論（例: `.User.Name` → `string`）
 - **明示的な型ディレクティブ**: `@param` ディレクティブによる複雑な型の指定をサポート
 - **型安全性**: 強く型付けされた構造体と描画関数を生成
+- **テンプレートのグループ化**: サブディレクトリでテンプレートを論理的にグループ化し、ネストされた名前空間を生成
 - **複数テンプレート**: 単一または複数のテンプレートファイルを一度に処理
 - **go generate 統合**: Go のコード生成ワークフローにシームレスに統合
 - **柔軟な描画**: 型安全な描画と動的な描画の両方のオプションを提供
@@ -49,7 +50,7 @@ go get github.com/bellwood4486/tmpltype
 ```go
 package main
 
-//go:generate tmpltype -in templates/email.tmpl -pkg main -out template_gen.go
+//go:generate tmpltype -dir templates -pkg main -out template_gen.go
 ```
 
 3. コード生成を実行:
@@ -104,16 +105,49 @@ func main() {
 
 #### 複数テンプレート
 
-複数のテンプレートファイルを一度に処理:
+`-dir`オプションを指定すると、ディレクトリ内のすべての`.tmpl`ファイルが自動的に処理されます:
 
 ```go
-//go:generate tmpltype -in "templates/*.tmpl" -pkg main -out templates_gen.go
+//go:generate tmpltype -dir templates -pkg main -out templates_gen.go
 ```
 
-または明示的にファイルを指定:
+このコマンドは以下を自動的にスキャンします:
+- `templates/*.tmpl` (フラットなテンプレート)
+- `templates/*/*.tmpl` (グループ化されたテンプレート、1階層のみ)
+
+#### テンプレートのグループ化
+
+サブディレクトリでテンプレートを論理的にグループ化:
+
+```
+templates/
+├── footer.tmpl                  # フラットなテンプレート
+├── mail_invite/                 # グループ
+│   ├── title.tmpl
+│   └── content.tmpl
+└── mail_account_created/        # グループ
+    ├── title.tmpl
+    └── content.tmpl
+```
+
+生成されるコード:
 
 ```go
-//go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
+var Template = struct {
+    Footer             TemplateName  // フラット
+    MailInvite struct {              // グループ
+        Title   TemplateName
+        Content TemplateName
+    }
+    MailAccountCreated struct {      // グループ
+        Title   TemplateName
+        Content TemplateName
+    }
+}
+
+// 使用例
+RenderMailInviteTitle(w, MailInviteTitle{...})
+Render(w, Template.MailInvite.Title, data)
 ```
 
 ### `@param` ディレクティブリファレンス
@@ -275,18 +309,16 @@ type All_typesUser struct {
 ### コマンドラインオプション
 
 ```
-tmpltype -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
+tmpltype -dir <directory> -pkg <name> -out <file>
 
 オプション:
-  -in string
-        入力パターン（glob サポート、例: "*.tmpl" または "templates/*.tmpl"）
-        複数ファイルはカンマ区切りで指定可能
+  -dir string
+        テンプレートディレクトリ（必須）
+        dir/*.tmpl (フラット) と dir/*/*.tmpl (グループ、1階層) を自動スキャン
   -pkg string
-        出力パッケージ名
+        出力パッケージ名（必須）
   -out string
-        出力 .go ファイルパス
-  -exclude string
-        除外パターン（オプション、ファイルのベース名に適用）
+        出力 .go ファイルパス（必須）
 ```
 
 ### 動作原理
@@ -512,6 +544,7 @@ func RenderNav(w io.Writer, p Nav) error { ... }
 - [`03_multi_template`](./examples/03_multi_template): 複数テンプレートの一括処理
 - [`04_comprehensive_template`](./examples/04_comprehensive_template): サポートされるすべてのテンプレート構文パターンを示す包括的な例
 - [`05_all_param_types`](./examples/05_all_param_types): サポートされるすべての `@param` 型と制限事項の完全なリファレンス
+- [`07_grouping`](./examples/07_grouping): テンプレートのグループ化（フラットとグループの混在）
 
 サンプルの実行:
 
@@ -582,6 +615,7 @@ A Go code generator that creates type-safe template rendering functions from Go 
 - **Type Inference**: Automatically infers parameter types from template syntax (e.g., `.User.Name` → `string`)
 - **Explicit Type Directives**: Support for `@param` directives to specify complex types
 - **Type Safety**: Generate strongly-typed structs and render functions
+- **Template Grouping**: Organize templates logically in subdirectories with nested namespaces
 - **Multiple Templates**: Process single or multiple template files at once
 - **go generate Integration**: Seamlessly integrates with Go's code generation workflow
 - **Flexible Rendering**: Provides both type-safe and dynamic rendering options
@@ -614,7 +648,7 @@ go get github.com/bellwood4486/tmpltype
 ```go
 package main
 
-//go:generate tmpltype -in templates/email.tmpl -pkg main -out template_gen.go
+//go:generate tmpltype -dir templates -pkg main -out template_gen.go
 ```
 
 3. Run code generation:
@@ -669,16 +703,49 @@ For complex types, use `@param` directives in your template `templates/user.tmpl
 
 #### Multiple Templates
 
-Process multiple template files at once:
+The `-dir` option automatically processes all `.tmpl` files in the directory:
 
 ```go
-//go:generate tmpltype -in "templates/*.tmpl" -pkg main -out templates_gen.go
+//go:generate tmpltype -dir templates -pkg main -out templates_gen.go
 ```
 
-Or specify files explicitly:
+This command automatically scans:
+- `templates/*.tmpl` (flat templates)
+- `templates/*/*.tmpl` (grouped templates, 1 level only)
+
+#### Template Grouping
+
+Organize templates logically in subdirectories:
+
+```
+templates/
+├── footer.tmpl                  # Flat template
+├── mail_invite/                 # Group
+│   ├── title.tmpl
+│   └── content.tmpl
+└── mail_account_created/        # Group
+    ├── title.tmpl
+    └── content.tmpl
+```
+
+Generated code:
 
 ```go
-//go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
+var Template = struct {
+    Footer             TemplateName  // Flat
+    MailInvite struct {              // Group
+        Title   TemplateName
+        Content TemplateName
+    }
+    MailAccountCreated struct {      // Group
+        Title   TemplateName
+        Content TemplateName
+    }
+}
+
+// Usage
+RenderMailInviteTitle(w, MailInviteTitle{...})
+Render(w, Template.MailInvite.Title, data)
 ```
 
 ### `@param` Directive Reference
@@ -840,18 +907,16 @@ See [`examples/05_all_param_types`](./examples/05_all_param_types) for a compreh
 ### Command Line Options
 
 ```
-tmpltype -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
+tmpltype -dir <directory> -pkg <name> -out <file>
 
 Options:
-  -in string
-        Input pattern (glob supported, e.g., "*.tmpl" or "templates/*.tmpl")
-        Multiple files can be specified with comma separation
+  -dir string
+        Template directory (required)
+        Automatically scans dir/*.tmpl (flat) and dir/*/*.tmpl (grouped, 1 level)
   -pkg string
-        Output package name
+        Output package name (required)
   -out string
-        Output .go file path
-  -exclude string
-        Exclude pattern (optional, applied to file basenames)
+        Output .go file path (required)
 ```
 
 ### How It Works
@@ -1077,6 +1142,7 @@ Check the [`examples/`](./examples) directory for complete working examples:
 - [`03_multi_template`](./examples/03_multi_template): Processing multiple templates at once
 - [`04_comprehensive_template`](./examples/04_comprehensive_template): Comprehensive example demonstrating all supported template syntax patterns
 - [`05_all_param_types`](./examples/05_all_param_types): Complete reference for all supported `@param` types and limitations
+- [`07_grouping`](./examples/07_grouping): Template grouping (mixed flat and grouped templates)
 
 Run examples:
 

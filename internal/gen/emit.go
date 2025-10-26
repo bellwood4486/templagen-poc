@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -20,29 +21,48 @@ type Unit struct {
 	SourceLiteral string // テンプレ本文
 }
 
-// templateData は各テンプレートごとの処理結果を保持
-type templateData struct {
-	name       string              // テンプレート名（例: "user", "user_list"）
-	typeName   string              // 型名（例: "User", "UserList"）
-	sourcePath string              // 埋め込むファイルパス
-	varName    string              // embed変数名（例: "userTplSource"）
+// tmpl は単一テンプレートのコード生成に必要な情報
+type tmpl struct {
+	name       string              // テンプレート名
+	groupName  string              // グループ名（空ならフラット）
+	typeName   string              // 生成する型名
+	sourcePath string              // テンプレートファイルパス
+	varName    string              // embed変数名
 	typed      *typing.TypedSchema // 型情報
 }
 
-// preparedData はコード生成に必要なすべての準備済みデータを保持
-type preparedData struct {
-	pkg       string
-	imports   map[string]struct{}
-	templates []templateData
+// tmplGroup はテンプレートグループのコード生成に必要な情報
+type tmplGroup struct {
+	name      string // グループ名
+	typeName  string // 生成する型名
+	templates []tmpl // グループ内のテンプレート
 }
 
-// prepareTemplateData はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
-func prepareTemplateData(units []Unit) (*preparedData, error) {
+// emitPrepared は解析・準備が完了したコード生成のための情報
+type emitPrepared struct {
+	pkg           string
+	imports       map[string]struct{}
+	groups        []tmplGroup // グループ
+	flatTemplates []tmpl      // フラットなテンプレート
+}
+
+// allTemplates はフラットとグループ内の全テンプレートを返す
+func (p *emitPrepared) allTemplates() []tmpl {
+	all := make([]tmpl, 0, len(p.flatTemplates)+len(p.groups)*2)
+	all = append(all, p.flatTemplates...)
+	for _, g := range p.groups {
+		all = append(all, g.templates...)
+	}
+	return all
+}
+
+// prepare はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
+func prepare(units []Unit, basedir string) (*emitPrepared, error) {
 	if len(units) == 0 {
 		return nil, fmt.Errorf("no units provided")
 	}
 
-	templates := make([]templateData, 0, len(units))
+	templates := make([]tmpl, 0, len(units))
 	allImports := make(map[string]struct{})
 
 	// デフォルトのimport
@@ -53,9 +73,33 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 
 	// 各テンプレートを処理
 	for _, unit := range units {
-		// テンプレート名を抽出
-		templateName := extractTemplateName(unit.SourcePath)
-		typeName := util.Export(templateName)
+		// テンプレート名を抽出 (例: "mail_invite/title" または "footer")
+		templateName, err := extractTemplateName(unit.SourcePath, basedir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract template name from %s: %w", unit.SourcePath, err)
+		}
+
+		// グループ名を抽出 (スラッシュが含まれていればグループ)
+		var groupName string
+		var localName string
+		if strings.Contains(templateName, "/") {
+			parts := strings.Split(templateName, "/")
+			groupName = parts[0]
+			localName = parts[1]
+		} else {
+			localName = templateName
+		}
+
+		// 型名を生成 (例: "MailInviteTitle" または "Footer")
+		var typeName string
+		if groupName != "" {
+			typeName = util.Export(groupName) + util.Export(localName)
+		} else {
+			typeName = util.Export(localName)
+		}
+
+		// embed変数名を生成 (スラッシュをアンダースコアに変換)
+		varName := strings.ReplaceAll(templateName, "/", "_") + "TplSource"
 
 		// テンプレートをスキャン
 		sch, err := scan.ScanTemplate(unit.SourceLiteral)
@@ -70,32 +114,68 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 		}
 
 		// テンプレートデータを追加
-		templates = append(templates, templateData{
+		templates = append(templates, tmpl{
 			name:       templateName,
+			groupName:  groupName,
 			typeName:   typeName,
 			sourcePath: unit.SourcePath,
-			varName:    templateName + "TplSource",
+			varName:    varName,
 			typed:      typed,
 		})
 	}
 
 	// テンプレート名でソート（出力を安定させるため）
-	slices.SortFunc(templates, func(a, b templateData) int {
+	slices.SortFunc(templates, func(a, b tmpl) int {
 		return strings.Compare(a.name, b.name)
 	})
 
-	return &preparedData{
-		pkg:       units[0].Pkg, // すべて同じパッケージ名のはず
-		imports:   allImports,
-		templates: templates,
+	// グループ情報を整理
+	groups, flatTemplates := organizeGroups(templates)
+
+	return &emitPrepared{
+		pkg:           units[0].Pkg, // すべて同じパッケージ名のはず
+		imports:       allImports,
+		groups:        groups,
+		flatTemplates: flatTemplates,
 	}, nil
+}
+
+// organizeGroups はテンプレートをグループとフラットに分類する
+func organizeGroups(templates []tmpl) ([]tmplGroup, []tmpl) {
+	groupMap := make(map[string][]tmpl)
+	var flatTemplates []tmpl
+
+	for _, t := range templates {
+		if t.groupName != "" {
+			groupMap[t.groupName] = append(groupMap[t.groupName], t)
+		} else {
+			flatTemplates = append(flatTemplates, t)
+		}
+	}
+
+	// グループ情報を構築
+	var groups []tmplGroup
+	for groupName, groupTemplates := range groupMap {
+		groups = append(groups, tmplGroup{
+			name:      groupName,
+			typeName:  util.Export(groupName),
+			templates: groupTemplates,
+		})
+	}
+
+	// グループ名でソート
+	slices.SortFunc(groups, func(a, b tmplGroup) int {
+		return strings.Compare(a.name, b.name)
+	})
+
+	return groups, flatTemplates
 }
 
 // Emit は複数のテンプレートから1つの統合Goファイルを生成する
 // 単一テンプレートの場合も同じフォーマットで生成される
-func Emit(units []Unit) (string, error) {
+func Emit(units []Unit, basedir string) (string, error) {
 	// Phase 1: データ収集と準備
-	prepared, err := prepareTemplateData(units)
+	prepared, err := prepare(units, basedir)
 	if err != nil {
 		return "", err
 	}
@@ -104,12 +184,12 @@ func Emit(units []Unit) (string, error) {
 	var b strings.Builder
 	generateHeader(&b, prepared.pkg)
 	generateImports(&b, prepared.imports)
-	generateTemplateNamespace(&b, prepared.templates)
-	generateEmbedDeclarations(&b, prepared.templates)
-	generateTemplateInitialization(&b, prepared.templates)
+	generateTemplateNamespace(&b, prepared)
+	generateEmbedDeclarations(&b, prepared.allTemplates())
+	generateTemplateInitialization(&b, prepared)
 	generateTemplatesFunction(&b)
 	generateGenericRenderFunction(&b)
-	generateTemplateBlocks(&b, prepared.templates)
+	generateTemplateBlocks(&b, prepared.allTemplates())
 
 	// Phase 3: フォーマット
 	return formatCode(b.String())
@@ -136,31 +216,63 @@ func generateImports(b *strings.Builder, imports map[string]struct{}) {
 }
 
 // generateTemplateNamespace はTemplateName型と名前空間を生成する
-func generateTemplateNamespace(b *strings.Builder, templates []templateData) {
+func generateTemplateNamespace(b *strings.Builder, p *emitPrepared) {
 	write(b, "// TemplateName is a type-safe template name\n")
 	write(b, "type TemplateName string\n\n")
 	write(b, "// Template provides type-safe access to template names\n")
 	write(b, "var Template = struct {\n")
-	for _, tmpl := range templates {
-		write(b, "\t%s TemplateName\n", tmpl.typeName)
+
+	// フラットなテンプレート
+	for _, t := range p.flatTemplates {
+		write(b, "\t%s TemplateName\n", t.typeName)
 	}
+
+	// グループ
+	for _, g := range p.groups {
+		write(b, "\t%s struct {\n", g.typeName)
+		for _, t := range g.templates {
+			// ローカル名（グループプレフィックスなし）を取得
+			localName := strings.TrimPrefix(t.typeName, g.typeName)
+			write(b, "\t\t%s TemplateName\n", localName)
+		}
+		write(b, "\t}\n")
+	}
+
 	write(b, "}{\n")
-	for _, tmpl := range templates {
-		write(b, "\t%s: %q,\n", tmpl.typeName, tmpl.name)
+
+	// フラットなテンプレートの初期化
+	for _, t := range p.flatTemplates {
+		write(b, "\t%s: %q,\n", t.typeName, t.name)
 	}
+
+	// グループの初期化
+	for _, g := range p.groups {
+		write(b, "\t%s: struct {\n", g.typeName)
+		for _, t := range g.templates {
+			localName := strings.TrimPrefix(t.typeName, g.typeName)
+			write(b, "\t\t%s TemplateName\n", localName)
+		}
+		write(b, "\t}{\n")
+		for _, t := range g.templates {
+			localName := strings.TrimPrefix(t.typeName, g.typeName)
+			write(b, "\t\t%s: %q,\n", localName, t.name)
+		}
+		write(b, "\t},\n")
+	}
+
 	write(b, "}\n\n")
 }
 
 // generateEmbedDeclarations は各テンプレートのembed宣言を生成する
-func generateEmbedDeclarations(b *strings.Builder, templates []templateData) {
-	for _, tmpl := range templates {
-		write(b, "//go:embed %s\n", tmpl.sourcePath)
-		write(b, "var %s string\n\n", tmpl.varName)
+func generateEmbedDeclarations(b *strings.Builder, templates []tmpl) {
+	for _, t := range templates {
+		write(b, "//go:embed %s\n", t.sourcePath)
+		write(b, "var %s string\n\n", t.varName)
 	}
 }
 
 // generateTemplateInitialization はテンプレート初期化のためのヘルパー関数とマップを生成する
-func generateTemplateInitialization(b *strings.Builder, templates []templateData) {
+func generateTemplateInitialization(b *strings.Builder, p *emitPrepared) {
 	// Helper function for template initialization
 	write(b, "func newTemplate(name TemplateName, source string) *template.Template {\n")
 	write(b, "\treturn template.Must(template.New(string(name)).Option(%q).Parse(source))\n", "missingkey=error")
@@ -168,11 +280,24 @@ func generateTemplateInitialization(b *strings.Builder, templates []templateData
 
 	// Templates map - initialized once at package initialization
 	write(b, "var templates = map[TemplateName]*template.Template{\n")
-	for _, tmpl := range templates {
-		fieldRef := "Template." + tmpl.typeName
+
+	// フラットなテンプレート
+	for _, t := range p.flatTemplates {
+		fieldRef := "Template." + t.typeName
 		write(b, "\t%s: newTemplate(%s, %s),\n",
-			fieldRef, fieldRef, tmpl.varName)
+			fieldRef, fieldRef, t.varName)
 	}
+
+	// グループ内のテンプレート
+	for _, g := range p.groups {
+		for _, t := range g.templates {
+			localName := strings.TrimPrefix(t.typeName, g.typeName)
+			fieldRef := "Template." + g.typeName + "." + localName
+			write(b, "\t%s: newTemplate(%s, %s),\n",
+				fieldRef, fieldRef, t.varName)
+		}
+	}
+
 	write(b, "}\n\n")
 }
 
@@ -197,26 +322,26 @@ func generateGenericRenderFunction(b *strings.Builder) {
 }
 
 // generateTemplateBlocks は各テンプレートごとの型定義とRender関数を生成する
-func generateTemplateBlocks(b *strings.Builder, templates []templateData) {
+func generateTemplateBlocks(b *strings.Builder, templates []tmpl) {
 	generatedTypes := make(map[string]bool)
 
-	for _, tmpl := range templates {
+	for _, t := range templates {
 		// テンプレートブロックのセパレータ
 		write(b, "// ============================================================\n")
-		write(b, "// %s template\n", tmpl.name)
+		write(b, "// %s template\n", t.name)
 		write(b, "// ============================================================\n\n")
 
-		generateNamedTypes(b, tmpl, generatedTypes)
-		generateParamType(b, tmpl)
-		generateRenderFunction(b, tmpl)
+		generateNamedTypes(b, t, generatedTypes)
+		generateParamType(b, t)
+		generateRenderFunction(b, t)
 	}
 }
 
 // generateNamedTypes は名前付き型を生成する
-func generateNamedTypes(b *strings.Builder, tmpl templateData, generatedTypes map[string]bool) {
-	for _, namedType := range tmpl.typed.NamedTypes {
+func generateNamedTypes(b *strings.Builder, t tmpl, generatedTypes map[string]bool) {
+	for _, namedType := range t.typed.NamedTypes {
 		// 型名の衝突を避けるため、プレフィックスを付ける
-		typeName := tmpl.typeName + namedType.Name
+		typeName := t.typeName + namedType.Name
 		if generatedTypes[typeName] {
 			continue // すでに生成済み
 		}
@@ -228,7 +353,7 @@ func generateNamedTypes(b *strings.Builder, tmpl templateData, generatedTypes ma
 		for _, fieldName := range fieldNames {
 			field := namedType.Fields[fieldName]
 			// フィールドの型名も調整が必要な場合がある
-			goType := adjustTypeForTemplate(field.GoType, tmpl.typeName)
+			goType := adjustTypeForTemplate(field.GoType, t.typeName)
 			write(b, "\t%s %s\n", field.Name, goType)
 		}
 		write(b, "}\n\n")
@@ -236,26 +361,36 @@ func generateNamedTypes(b *strings.Builder, tmpl templateData, generatedTypes ma
 }
 
 // generateParamType はメインのパラメータ型を生成する
-func generateParamType(b *strings.Builder, tmpl templateData) {
-	write(b, "// %s represents parameters for %s template\n", tmpl.typeName, tmpl.name)
-	write(b, "type %s struct {\n", tmpl.typeName)
+func generateParamType(b *strings.Builder, t tmpl) {
+	write(b, "// %s represents parameters for %s template\n", t.typeName, t.name)
+	write(b, "type %s struct {\n", t.typeName)
 	// トップレベルフィールドをソートして順序を安定化
-	topFieldNames := slices.Sorted(maps.Keys(tmpl.typed.Fields))
+	topFieldNames := slices.Sorted(maps.Keys(t.typed.Fields))
 	for _, fieldName := range topFieldNames {
-		field := tmpl.typed.Fields[fieldName]
+		field := t.typed.Fields[fieldName]
 		// フィールドの型名も調整が必要な場合がある
-		goType := adjustTypeForTemplate(field.GoType, tmpl.typeName)
+		goType := adjustTypeForTemplate(field.GoType, t.typeName)
 		write(b, "\t%s %s\n", field.Name, goType)
 	}
 	write(b, "}\n\n")
 }
 
 // generateRenderFunction は型安全なRender関数を生成する
-func generateRenderFunction(b *strings.Builder, tmpl templateData) {
-	funcName := "Render" + tmpl.typeName
-	fieldRef := "Template." + tmpl.typeName
-	write(b, "// %s renders the %s template\n", funcName, tmpl.name)
-	write(b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
+func generateRenderFunction(b *strings.Builder, t tmpl) {
+	funcName := "Render" + t.typeName
+
+	// フィールド参照を構築 (グループ対応)
+	var fieldRef string
+	if t.groupName != "" {
+		groupTypeName := util.Export(t.groupName)
+		localName := strings.TrimPrefix(t.typeName, groupTypeName)
+		fieldRef = "Template." + groupTypeName + "." + localName
+	} else {
+		fieldRef = "Template." + t.typeName
+	}
+
+	write(b, "// %s renders the %s template\n", funcName, t.name)
+	write(b, "func %s(w io.Writer, p %s) error {\n", funcName, t.typeName)
 	write(b, "\ttmpl, ok := templates[%s]\n", fieldRef)
 	write(b, "\tif !ok {\n")
 	write(b, "\t\treturn fmt.Errorf(\"template %%q not found\", %s)\n", fieldRef)
@@ -274,25 +409,50 @@ func formatCode(code string) (string, error) {
 }
 
 // extractTemplateName はファイルパスからテンプレート名を抽出する
-// 例: "templates/user_list.tmpl" -> "user_list"
-// 例: "email.tmpl" -> "email"
-func extractTemplateName(path string) string {
-	// ベース名を取得
-	base := filepath.Base(path)
+// basedir からの相対パスでグループ判定を行う
+// 例: basedir="templates", path="templates/footer.tmpl" -> "footer" (フラット)
+// 例: basedir="templates", path="templates/email/welcome.tmpl" -> "email/welcome" (グループ)
+func extractTemplateName(path string, basedir string) (string, error) {
+	// basedir からの相対パスを取得
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	absBasedir, err := filepath.Abs(basedir)
+	if err != nil {
+		return "", err
+	}
+
+	relPath, err := filepath.Rel(absBasedir, absPath)
+	if err != nil {
+		return "", fmt.Errorf("path %s is not under basedir %s", path, basedir)
+	}
 
 	// 拡張子を削除
-	name := strings.TrimSuffix(base, filepath.Ext(base))
+	pathWithoutExt := strings.TrimSuffix(relPath, filepath.Ext(relPath))
 
-	// 数字プレフィックスを削除（例: "01_header" -> "header"）
-	if len(name) > 3 && name[0] >= '0' && name[0] <= '9' {
-		if name[1] >= '0' && name[1] <= '9' {
-			if name[2] == '_' || name[2] == '-' {
-				name = name[3:]
-			}
-		} else if name[1] == '_' || name[1] == '-' {
-			name = name[2:]
-		}
+	// ディレクトリ区切りで分割
+	parts := strings.Split(filepath.ToSlash(pathWithoutExt), "/")
+
+	// 各パーツから数字プレフィックスを削除してクリーンアップ
+	for i, part := range parts {
+		parts[i] = cleanName(part)
 	}
+
+	// 階層チェック（フラット=1パーツ、グループ=2パーツ、それ以上はエラー）
+	if len(parts) > 2 {
+		return "", fmt.Errorf("template nesting too deep: %s (max 1 level of grouping)", relPath)
+	}
+
+	// パスとして結合
+	return strings.Join(parts, "/"), nil
+}
+
+// cleanName は名前から数字プレフィックスを削除し、ハイフンをアンダースコアに変換する
+func cleanName(name string) string {
+	// 数字プレフィックスを削除（例: "01_header" -> "header", "1-mail" -> "mail"）
+	re := regexp.MustCompile(`^\d+[-_]`)
+	name = re.ReplaceAllString(name, "")
 
 	// ハイフンをアンダースコアに変換
 	name = strings.ReplaceAll(name, "-", "_")

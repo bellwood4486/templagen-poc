@@ -15,9 +15,9 @@ func main() {
 	fmt.Println("Features: 1. Basic Field Reference & 2. Nested Field Reference")
 	fmt.Println()
 	var buf1 bytes.Buffer
-	_ = RenderBasic_fields(&buf1, Basic_fields{
+	_ = RenderBasicFields(&buf1, BasicFields{
 		Title: "Q4 2024 Report",
-		Author: Basic_fieldsAuthor{
+		Author: BasicFieldsAuthor{
 			Name:  "Alice Johnson",
 			Email: "alice@example.com",
 		},
@@ -30,9 +30,9 @@ func main() {
 	fmt.Println("Features: 3. Conditional (if) & 4. With Statement and Else Clause")
 	fmt.Println()
 	var buf2 bytes.Buffer
-	_ = RenderControl_flow(&buf2, Control_flow{
+	_ = RenderControlFlow(&buf2, ControlFlow{
 		Status: "Published",
-		Summary: Control_flowSummary{
+		Summary: ControlFlowSummary{
 			Content:     "This report summarizes the key achievements and metrics for Q4 2024.",
 			LastUpdated: "2024-12-31",
 		},

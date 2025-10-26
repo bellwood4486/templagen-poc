@@ -76,7 +76,7 @@ func TestEmit_BasicScaffoldAndTypes(t *testing.T) {
 		SourceLiteral: "{{ .User.Name }}\n{{ .Message }}\n",
 	}
 
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
@@ -190,7 +190,7 @@ func TestEmit_RangeAndIndex_TypesAndOrder(t *testing.T) {
 		SourcePath:    "email.tmpl",
 		SourceLiteral: "{{ range .Items }}{{ .Title }}{{ .ID }}{{ end }}\n{{ index .Meta \"env\" }}\n",
 	}
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
@@ -236,7 +236,7 @@ func TestEmit_RangeAndIndex_TypesAndOrder(t *testing.T) {
 
 func TestEmit_Golden_Simple(t *testing.T) {
 	u := gen.Unit{Pkg: "x", SourcePath: "tpl.tmpl", SourceLiteral: "{{ .User.Name }}\n{{ .Message }}\n"}
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestEmit_CompilesInTempModule(t *testing.T) {
 	}
 
 	u := gen.Unit{Pkg: "x", SourcePath: "tpl.tmpl", SourceLiteral: "Hello {{ .Message }}"}
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestEmit_WithParamOverride_BasicTypes(t *testing.T) {
 		SourceLiteral: src,
 	}
 
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
@@ -353,7 +353,7 @@ func TestEmit_WithParamOverride_SliceType(t *testing.T) {
 		SourceLiteral: src,
 	}
 
-	code, err := gen.Emit([]gen.Unit{u})
+	code, err := gen.Emit([]gen.Unit{u}, ".")
 	if err != nil {
 		t.Fatalf("Emit failed: %v", err)
 	}
