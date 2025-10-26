@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -434,16 +435,9 @@ func extractTemplateName(path string) string {
 
 // cleanName は名前から数字プレフィックスを削除し、ハイフンをアンダースコアに変換する
 func cleanName(name string) string {
-	// 数字プレフィックスを削除（例: "01_header" -> "header"）
-	if len(name) > 3 && name[0] >= '0' && name[0] <= '9' {
-		if name[1] >= '0' && name[1] <= '9' {
-			if name[2] == '_' || name[2] == '-' {
-				name = name[3:]
-			}
-		} else if name[1] == '_' || name[1] == '-' {
-			name = name[2:]
-		}
-	}
+	// 数字プレフィックスを削除（例: "01_header" -> "header", "1-mail" -> "mail"）
+	re := regexp.MustCompile(`^\d+[-_]`)
+	name = re.ReplaceAllString(name, "")
 
 	// ハイフンをアンダースコアに変換
 	name = strings.ReplaceAll(name, "-", "_")

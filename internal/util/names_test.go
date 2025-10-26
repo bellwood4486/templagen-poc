@@ -14,10 +14,15 @@ func TestExport(t *testing.T) {
 		{in: "a", want: "A", name: "single lower"},
 		{in: "Z", want: "Z", name: "single upper"},
 		{in: "1user", want: "1user", name: "starts with digit"},
-		{in: "_user", want: "_user", name: "starts with underscore"},
+		{in: "_user", want: "User", name: "starts with underscore"},
 		{in: "applePie", want: "ApplePie", name: "capitalize only first"},
 		{in: "éclair", want: "éclair", name: "non-ascii lower"},
 		{in: "あいう", want: "あいう", name: "non-ascii japanese"},
+		{in: "user_name", want: "UserName", name: "snake_case"},
+		{in: "mail_invite", want: "MailInvite", name: "snake_case two words"},
+		{in: "mail_account_created", want: "MailAccountCreated", name: "snake_case three words"},
+		{in: "__double_underscore", want: "DoubleUnderscore", name: "leading double underscore"},
+		{in: "user__name", want: "UserName", name: "double underscore middle"},
 	}
 
 	for _, tt := range tests {

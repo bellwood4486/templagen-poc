@@ -5,7 +5,6 @@ import "strings"
 // Export は与えられた識別子を Go のエクスポートされた識別子に変換します。
 //
 // アンダースコア区切りの名前をキャメルケースに変換し、先頭を大文字にします。
-// ただし、先頭がアンダースコアの場合は元の名前をそのまま返します。
 // この関数は、テンプレートの変数名などから Go の構造体フィールド名を
 // 自動生成するときに利用します。
 //
@@ -13,15 +12,10 @@ import "strings"
 //   - "user" -> "User"
 //   - "mail_invite" -> "MailInvite"
 //   - "mail_account_created" -> "MailAccountCreated"
-//   - "_user" -> "_user" (先頭がアンダースコアの場合は変換しない)
-//   - "applePie" -> "ApplePie" (アンダースコアがない場合は先頭のみ大文字)
+//   - "_user" -> "User" (先頭のアンダースコアも除去)
+//   - "applePie" -> "ApplePie" (先頭のみ大文字)
 func Export(name string) string {
 	if name == "" {
-		return name
-	}
-
-	// 先頭がアンダースコアの場合は変換しない
-	if strings.HasPrefix(name, "_") {
 		return name
 	}
 
