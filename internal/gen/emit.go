@@ -22,18 +22,28 @@ type Unit struct {
 
 // templateData は各テンプレートごとの処理結果を保持
 type templateData struct {
-	name       string              // テンプレート名（例: "user", "user_list"）
-	typeName   string              // 型名（例: "User", "UserList"）
+	name       string              // テンプレート名（例: "user", "mail_invite/title"）
+	groupName  string              // グループ名（例: "mail_invite"）。フラットなら空文字列
+	typeName   string              // 型名（例: "User", "MailInviteTitle"）
 	sourcePath string              // 埋め込むファイルパス
 	varName    string              // embed変数名（例: "userTplSource"）
 	typed      *typing.TypedSchema // 型情報
+}
+
+// groupInfo はグループごとの情報を保持
+type groupInfo struct {
+	name      string         // グループ名（例: "mail_invite"）
+	typeName  string         // グループの型名（例: "MailInvite"）
+	templates []templateData // グループ内のテンプレート
 }
 
 // preparedData はコード生成に必要なすべての準備済みデータを保持
 type preparedData struct {
 	pkg       string
 	imports   map[string]struct{}
-	templates []templateData
+	templates []templateData // 全テンプレート（フラット + グループ）
+	groups    []groupInfo    // グループ情報（フラットなテンプレートは含まない）
+	flatTemplates []templateData // フラットなテンプレートのみ
 }
 
 // prepareTemplateData はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
@@ -53,9 +63,30 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 
 	// 各テンプレートを処理
 	for _, unit := range units {
-		// テンプレート名を抽出
+		// テンプレート名を抽出 (例: "mail_invite/title" または "footer")
 		templateName := extractTemplateName(unit.SourcePath)
-		typeName := util.Export(templateName)
+
+		// グループ名を抽出 (スラッシュが含まれていればグループ)
+		var groupName string
+		var localName string
+		if strings.Contains(templateName, "/") {
+			parts := strings.Split(templateName, "/")
+			groupName = parts[0]
+			localName = parts[1]
+		} else {
+			localName = templateName
+		}
+
+		// 型名を生成 (例: "MailInviteTitle" または "Footer")
+		var typeName string
+		if groupName != "" {
+			typeName = util.Export(groupName) + util.Export(localName)
+		} else {
+			typeName = util.Export(localName)
+		}
+
+		// embed変数名を生成 (スラッシュをアンダースコアに変換)
+		varName := strings.ReplaceAll(templateName, "/", "_") + "TplSource"
 
 		// テンプレートをスキャン
 		sch, err := scan.ScanTemplate(unit.SourceLiteral)
@@ -72,9 +103,10 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 		// テンプレートデータを追加
 		templates = append(templates, templateData{
 			name:       templateName,
+			groupName:  groupName,
 			typeName:   typeName,
 			sourcePath: unit.SourcePath,
-			varName:    templateName + "TplSource",
+			varName:    varName,
 			typed:      typed,
 		})
 	}
@@ -84,11 +116,47 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 		return strings.Compare(a.name, b.name)
 	})
 
+	// グループ情報を整理
+	groups, flatTemplates := organizeGroups(templates)
+
 	return &preparedData{
-		pkg:       units[0].Pkg, // すべて同じパッケージ名のはず
-		imports:   allImports,
-		templates: templates,
+		pkg:           units[0].Pkg, // すべて同じパッケージ名のはず
+		imports:       allImports,
+		templates:     templates,
+		groups:        groups,
+		flatTemplates: flatTemplates,
 	}, nil
+}
+
+// organizeGroups はテンプレートをグループとフラットに分類する
+func organizeGroups(templates []templateData) ([]groupInfo, []templateData) {
+	groupMap := make(map[string][]templateData)
+	var flatTemplates []templateData
+
+	for _, tmpl := range templates {
+		if tmpl.groupName != "" {
+			groupMap[tmpl.groupName] = append(groupMap[tmpl.groupName], tmpl)
+		} else {
+			flatTemplates = append(flatTemplates, tmpl)
+		}
+	}
+
+	// グループ情報を構築
+	var groups []groupInfo
+	for groupName, groupTemplates := range groupMap {
+		groups = append(groups, groupInfo{
+			name:      groupName,
+			typeName:  util.Export(groupName),
+			templates: groupTemplates,
+		})
+	}
+
+	// グループ名でソート
+	slices.SortFunc(groups, func(a, b groupInfo) int {
+		return strings.Compare(a.name, b.name)
+	})
+
+	return groups, flatTemplates
 }
 
 // Emit は複数のテンプレートから1つの統合Goファイルを生成する
@@ -104,9 +172,9 @@ func Emit(units []Unit) (string, error) {
 	var b strings.Builder
 	generateHeader(&b, prepared.pkg)
 	generateImports(&b, prepared.imports)
-	generateTemplateNamespace(&b, prepared.templates)
+	generateTemplateNamespace(&b, prepared)
 	generateEmbedDeclarations(&b, prepared.templates)
-	generateTemplateInitialization(&b, prepared.templates)
+	generateTemplateInitialization(&b, prepared)
 	generateTemplatesFunction(&b)
 	generateGenericRenderFunction(&b)
 	generateTemplateBlocks(&b, prepared.templates)
@@ -136,18 +204,50 @@ func generateImports(b *strings.Builder, imports map[string]struct{}) {
 }
 
 // generateTemplateNamespace はTemplateName型と名前空間を生成する
-func generateTemplateNamespace(b *strings.Builder, templates []templateData) {
+func generateTemplateNamespace(b *strings.Builder, prepared *preparedData) {
 	write(b, "// TemplateName is a type-safe template name\n")
 	write(b, "type TemplateName string\n\n")
 	write(b, "// Template provides type-safe access to template names\n")
 	write(b, "var Template = struct {\n")
-	for _, tmpl := range templates {
+
+	// フラットなテンプレート
+	for _, tmpl := range prepared.flatTemplates {
 		write(b, "\t%s TemplateName\n", tmpl.typeName)
 	}
+
+	// グループ
+	for _, group := range prepared.groups {
+		write(b, "\t%s struct {\n", group.typeName)
+		for _, tmpl := range group.templates {
+			// ローカル名（グループプレフィックスなし）を取得
+			localName := strings.TrimPrefix(tmpl.typeName, group.typeName)
+			write(b, "\t\t%s TemplateName\n", localName)
+		}
+		write(b, "\t}\n")
+	}
+
 	write(b, "}{\n")
-	for _, tmpl := range templates {
+
+	// フラットなテンプレートの初期化
+	for _, tmpl := range prepared.flatTemplates {
 		write(b, "\t%s: %q,\n", tmpl.typeName, tmpl.name)
 	}
+
+	// グループの初期化
+	for _, group := range prepared.groups {
+		write(b, "\t%s: struct {\n", group.typeName)
+		for _, tmpl := range group.templates {
+			localName := strings.TrimPrefix(tmpl.typeName, group.typeName)
+			write(b, "\t\t%s TemplateName\n", localName)
+		}
+		write(b, "\t}{\n")
+		for _, tmpl := range group.templates {
+			localName := strings.TrimPrefix(tmpl.typeName, group.typeName)
+			write(b, "\t\t%s: %q,\n", localName, tmpl.name)
+		}
+		write(b, "\t},\n")
+	}
+
 	write(b, "}\n\n")
 }
 
@@ -160,7 +260,7 @@ func generateEmbedDeclarations(b *strings.Builder, templates []templateData) {
 }
 
 // generateTemplateInitialization はテンプレート初期化のためのヘルパー関数とマップを生成する
-func generateTemplateInitialization(b *strings.Builder, templates []templateData) {
+func generateTemplateInitialization(b *strings.Builder, prepared *preparedData) {
 	// Helper function for template initialization
 	write(b, "func newTemplate(name TemplateName, source string) *template.Template {\n")
 	write(b, "\treturn template.Must(template.New(string(name)).Option(%q).Parse(source))\n", "missingkey=error")
@@ -168,11 +268,24 @@ func generateTemplateInitialization(b *strings.Builder, templates []templateData
 
 	// Templates map - initialized once at package initialization
 	write(b, "var templates = map[TemplateName]*template.Template{\n")
-	for _, tmpl := range templates {
+
+	// フラットなテンプレート
+	for _, tmpl := range prepared.flatTemplates {
 		fieldRef := "Template." + tmpl.typeName
 		write(b, "\t%s: newTemplate(%s, %s),\n",
 			fieldRef, fieldRef, tmpl.varName)
 	}
+
+	// グループ内のテンプレート
+	for _, group := range prepared.groups {
+		for _, tmpl := range group.templates {
+			localName := strings.TrimPrefix(tmpl.typeName, group.typeName)
+			fieldRef := "Template." + group.typeName + "." + localName
+			write(b, "\t%s: newTemplate(%s, %s),\n",
+				fieldRef, fieldRef, tmpl.varName)
+		}
+	}
+
 	write(b, "}\n\n")
 }
 
@@ -253,7 +366,17 @@ func generateParamType(b *strings.Builder, tmpl templateData) {
 // generateRenderFunction は型安全なRender関数を生成する
 func generateRenderFunction(b *strings.Builder, tmpl templateData) {
 	funcName := "Render" + tmpl.typeName
-	fieldRef := "Template." + tmpl.typeName
+
+	// フィールド参照を構築 (グループ対応)
+	var fieldRef string
+	if tmpl.groupName != "" {
+		groupTypeName := util.Export(tmpl.groupName)
+		localName := strings.TrimPrefix(tmpl.typeName, groupTypeName)
+		fieldRef = "Template." + groupTypeName + "." + localName
+	} else {
+		fieldRef = "Template." + tmpl.typeName
+	}
+
 	write(b, "// %s renders the %s template\n", funcName, tmpl.name)
 	write(b, "func %s(w io.Writer, p %s) error {\n", funcName, tmpl.typeName)
 	write(b, "\ttmpl, ok := templates[%s]\n", fieldRef)
@@ -274,15 +397,43 @@ func formatCode(code string) (string, error) {
 }
 
 // extractTemplateName はファイルパスからテンプレート名を抽出する
-// 例: "templates/user_list.tmpl" -> "user_list"
-// 例: "email.tmpl" -> "email"
+// グループ対応: ディレクトリを含むパスを返す
+// 例: "templates/user_list.tmpl" -> "user_list" (フラット)
+// 例: "templates/mail_invite/title.tmpl" -> "mail_invite/title" (グループ)
+// 例: "email.tmpl" -> "email" (フラット)
 func extractTemplateName(path string) string {
-	// ベース名を取得
-	base := filepath.Base(path)
-
 	// 拡張子を削除
-	name := strings.TrimSuffix(base, filepath.Ext(base))
+	pathWithoutExt := strings.TrimSuffix(path, filepath.Ext(path))
 
+	// ディレクトリ区切りで分割
+	parts := strings.Split(filepath.ToSlash(pathWithoutExt), "/")
+
+	// 最後の2つのパーツを取得（ディレクトリ/ファイル名 または ファイル名のみ）
+	var relevantParts []string
+	if len(parts) >= 2 {
+		// templates/mail_invite/title.tmpl -> ["mail_invite", "title"]
+		relevantParts = parts[len(parts)-2:]
+
+		// 最後から2番目がtemplatesディレクトリの場合は、ファイル名のみ
+		if relevantParts[0] == "templates" {
+			relevantParts = parts[len(parts)-1:]
+		}
+	} else {
+		// ファイル名のみ
+		relevantParts = parts
+	}
+
+	// 各パーツから数字プレフィックスを削除してクリーンアップ
+	for i, part := range relevantParts {
+		relevantParts[i] = cleanName(part)
+	}
+
+	// パスとして結合
+	return strings.Join(relevantParts, "/")
+}
+
+// cleanName は名前から数字プレフィックスを削除し、ハイフンをアンダースコアに変換する
+func cleanName(name string) string {
 	// 数字プレフィックスを削除（例: "01_header" -> "header"）
 	if len(name) > 3 && name[0] >= '0' && name[0] <= '9' {
 		if name[1] >= '0' && name[1] <= '9' {
