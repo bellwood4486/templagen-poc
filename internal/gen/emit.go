@@ -31,8 +31,8 @@ type templateData struct {
 	typed      *typing.TypedSchema // 型情報
 }
 
-// groupInfo はグループごとの情報を保持
-type groupInfo struct {
+// groupData はグループごとの情報を保持
+type groupData struct {
 	name      string         // グループ名（例: "mail_invite"）
 	typeName  string         // グループの型名（例: "MailInvite"）
 	templates []templateData // グループ内のテンプレート
@@ -40,10 +40,10 @@ type groupInfo struct {
 
 // preparedData はコード生成に必要なすべての準備済みデータを保持
 type preparedData struct {
-	pkg       string
-	imports   map[string]struct{}
-	templates []templateData // 全テンプレート（フラット + グループ）
-	groups    []groupInfo    // グループ情報（フラットなテンプレートは含まない）
+	pkg           string
+	imports       map[string]struct{}
+	templates     []templateData // 全テンプレート（フラット + グループ）
+	groups        []groupData    // グループ情報（フラットなテンプレートは含まない）
 	flatTemplates []templateData // フラットなテンプレートのみ
 }
 
@@ -130,7 +130,7 @@ func prepareTemplateData(units []Unit) (*preparedData, error) {
 }
 
 // organizeGroups はテンプレートをグループとフラットに分類する
-func organizeGroups(templates []templateData) ([]groupInfo, []templateData) {
+func organizeGroups(templates []templateData) ([]groupData, []templateData) {
 	groupMap := make(map[string][]templateData)
 	var flatTemplates []templateData
 
@@ -143,9 +143,9 @@ func organizeGroups(templates []templateData) ([]groupInfo, []templateData) {
 	}
 
 	// グループ情報を構築
-	var groups []groupInfo
+	var groups []groupData
 	for groupName, groupTemplates := range groupMap {
-		groups = append(groups, groupInfo{
+		groups = append(groups, groupData{
 			name:      groupName,
 			typeName:  util.Export(groupName),
 			templates: groupTemplates,
@@ -153,7 +153,7 @@ func organizeGroups(templates []templateData) ([]groupInfo, []templateData) {
 	}
 
 	// グループ名でソート
-	slices.SortFunc(groups, func(a, b groupInfo) int {
+	slices.SortFunc(groups, func(a, b groupData) int {
 		return strings.Compare(a.name, b.name)
 	})
 
