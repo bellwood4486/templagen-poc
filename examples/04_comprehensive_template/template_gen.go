@@ -13,15 +13,15 @@ type TemplateName string
 
 // Template provides type-safe access to template names
 var Template = struct {
-	Advanced     TemplateName
-	Basic_fields TemplateName
-	Collections  TemplateName
-	Control_flow TemplateName
+	Advanced    TemplateName
+	BasicFields TemplateName
+	Collections TemplateName
+	ControlFlow TemplateName
 }{
-	Advanced:     "advanced",
-	Basic_fields: "basic_fields",
-	Collections:  "collections",
-	Control_flow: "control_flow",
+	Advanced:    "advanced",
+	BasicFields: "basic_fields",
+	Collections: "collections",
+	ControlFlow: "control_flow",
 }
 
 //go:embed templates/advanced.tmpl
@@ -41,10 +41,10 @@ func newTemplate(name TemplateName, source string) *template.Template {
 }
 
 var templates = map[TemplateName]*template.Template{
-	Template.Advanced:     newTemplate(Template.Advanced, advancedTplSource),
-	Template.Basic_fields: newTemplate(Template.Basic_fields, basic_fieldsTplSource),
-	Template.Collections:  newTemplate(Template.Collections, collectionsTplSource),
-	Template.Control_flow: newTemplate(Template.Control_flow, control_flowTplSource),
+	Template.Advanced:    newTemplate(Template.Advanced, advancedTplSource),
+	Template.BasicFields: newTemplate(Template.BasicFields, basic_fieldsTplSource),
+	Template.Collections: newTemplate(Template.Collections, collectionsTplSource),
+	Template.ControlFlow: newTemplate(Template.ControlFlow, control_flowTplSource),
 }
 
 // Templates returns a map of all templates
@@ -111,22 +111,22 @@ func RenderAdvanced(w io.Writer, p Advanced) error {
 // basic_fields template
 // ============================================================
 
-type Basic_fieldsAuthor struct {
+type BasicFieldsAuthor struct {
 	Email string
 	Name  string
 }
 
-// Basic_fields represents parameters for basic_fields template
-type Basic_fields struct {
-	Author Basic_fieldsAuthor
+// BasicFields represents parameters for basic_fields template
+type BasicFields struct {
+	Author BasicFieldsAuthor
 	Title  string
 }
 
-// RenderBasic_fields renders the basic_fields template
-func RenderBasic_fields(w io.Writer, p Basic_fields) error {
-	tmpl, ok := templates[Template.Basic_fields]
+// RenderBasicFields renders the basic_fields template
+func RenderBasicFields(w io.Writer, p BasicFields) error {
+	tmpl, ok := templates[Template.BasicFields]
 	if !ok {
-		return fmt.Errorf("template %q not found", Template.Basic_fields)
+		return fmt.Errorf("template %q not found", Template.BasicFields)
 	}
 	return tmpl.Execute(w, p)
 }
@@ -160,23 +160,23 @@ func RenderCollections(w io.Writer, p Collections) error {
 // control_flow template
 // ============================================================
 
-type Control_flowSummary struct {
+type ControlFlowSummary struct {
 	Content     string
 	LastUpdated string
 }
 
-// Control_flow represents parameters for control_flow template
-type Control_flow struct {
+// ControlFlow represents parameters for control_flow template
+type ControlFlow struct {
 	DefaultMessage string
 	Status         string
-	Summary        Control_flowSummary
+	Summary        ControlFlowSummary
 }
 
-// RenderControl_flow renders the control_flow template
-func RenderControl_flow(w io.Writer, p Control_flow) error {
-	tmpl, ok := templates[Template.Control_flow]
+// RenderControlFlow renders the control_flow template
+func RenderControlFlow(w io.Writer, p ControlFlow) error {
+	tmpl, ok := templates[Template.ControlFlow]
 	if !ok {
-		return fmt.Errorf("template %q not found", Template.Control_flow)
+		return fmt.Errorf("template %q not found", Template.ControlFlow)
 	}
 	return tmpl.Execute(w, p)
 }

@@ -17,7 +17,7 @@ func main() {
 	// 1. Render basic_types template
 	fmt.Println("--- 1. Basic Types ---")
 	var buf1 bytes.Buffer
-	_ = RenderBasic_types(&buf1, Basic_types{
+	_ = RenderBasicTypes(&buf1, BasicTypes{
 		Name:   "John Doe",
 		Age:    30,
 		Score:  98765,
@@ -30,7 +30,7 @@ func main() {
 	// 2. Render pointer_types template
 	fmt.Println("--- 2. Pointer Types (Optional Fields) ---")
 	var buf2 bytes.Buffer
-	_ = RenderPointer_types(&buf2, Pointer_types{
+	_ = RenderPointerTypes(&buf2, PointerTypes{
 		Email:       strPtr("john@example.com"),
 		PhoneNumber: nil, // Not provided
 		MiddleScore: intPtr(85),
@@ -42,7 +42,7 @@ func main() {
 	// 3. Render slice_types template
 	fmt.Println("--- 3. Slice Types ---")
 	var buf3 bytes.Buffer
-	_ = RenderSlice_types(&buf3, Slice_types{
+	_ = RenderSliceTypes(&buf3, SliceTypes{
 		Tags:        []string{"golang", "template", "example"},
 		CategoryIDs: []int{1, 2, 3, 5, 8},
 		Ratings:     []float64{4.5, 3.8, 5.0, 4.2},
@@ -54,7 +54,7 @@ func main() {
 	// 4. Render map_types template
 	fmt.Println("--- 4. Map Types ---")
 	var buf4 bytes.Buffer
-	_ = RenderMap_types(&buf4, Map_types{
+	_ = RenderMapTypes(&buf4, MapTypes{
 		Metadata: map[string]string{
 			"author":  "templagen",
 			"version": "1.0",
@@ -82,13 +82,13 @@ func main() {
 	// 5. Render struct_types template
 	fmt.Println("--- 5. Struct Types (Nested Fields) ---")
 	var buf5 bytes.Buffer
-	_ = RenderStruct_types(&buf5, Struct_types{
-		User: Struct_typesUser{
+	_ = RenderStructTypes(&buf5, StructTypes{
+		User: StructTypesUser{
 			ID:    12345,
 			Name:  "Alice Smith",
 			Email: "alice@example.com",
 		},
-		Product: Struct_typesProduct{
+		Product: StructTypesProduct{
 			SKU:     "PROD-001",
 			Price:   149.99,
 			InStock: true,
@@ -100,8 +100,8 @@ func main() {
 	// 6. Render complex_types template
 	fmt.Println("--- 6. Complex/Nested Types ---")
 	var buf6 bytes.Buffer
-	_ = RenderComplex_types(&buf6, Complex_types{
-		Items: []Complex_typesItemsItem{
+	_ = RenderComplexTypes(&buf6, ComplexTypes{
+		Items: []ComplexTypesItemsItem{
 			{
 				ID:    1,
 				Title: "Learning Go",
@@ -122,7 +122,7 @@ func main() {
 			},
 		},
 		OptionalItems: &[]string{"item1", "item2", "item3"},
-		Records: []Complex_typesRecordsItem{
+		Records: []ComplexTypesRecordsItem{
 			{
 				Name:  "Record A",
 				Age:   25,

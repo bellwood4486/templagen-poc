@@ -5,32 +5,36 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/bellwood4486/tmpltype/internal/gen"
 )
 
 func main() {
-	in := flag.String("in", "", "input pattern (glob supported)")
-	pkg := flag.String("pkg", "", "output package name")
-	out := flag.String("out", "", "output .go file path")
-	exclude := flag.String("exclude", "", "exclude pattern (optional)")
+	dir := flag.String("dir", "", "template directory (required)")
+	pkg := flag.String("pkg", "", "output package name (required)")
+	out := flag.String("out", "", "output .go file path (required)")
 	flag.Parse()
 
-	if *in == "" || *pkg == "" || *out == "" {
-		fmt.Fprintln(os.Stderr, "usage: tmpltype -in <pattern> -pkg <name> -out <file>")
+	if *dir == "" || *pkg == "" || *out == "" {
+		fmt.Fprintln(os.Stderr, "usage: tmpltype -dir <directory> -pkg <name> -out <file>")
 		os.Exit(2)
 	}
 
-	// 入力ファイルのリストを取得
-	files, err := resolveInputFiles(*in, *exclude)
+	// ディレクトリの存在確認
+	if _, err := os.Stat(*dir); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: directory not found: %s\n", *dir)
+		os.Exit(1)
+	}
+
+	// テンプレートファイルをスキャン
+	files, err := scanTemplateFiles(*dir)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to resolve input files: %w", err))
+		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to scan directory: %w", err))
 		os.Exit(1)
 	}
 
 	if len(files) == 0 {
-		fmt.Fprintln(os.Stderr, "no input files found")
+		fmt.Fprintf(os.Stderr, "Error: no .tmpl files found in %s/\n", *dir)
 		os.Exit(1)
 	}
 
@@ -58,8 +62,8 @@ func main() {
 		})
 	}
 
-	// コード生成
-	code, err := gen.Emit(units)
+	// コード生成（basedirを渡す）
+	code, err := gen.Emit(units, *dir)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("failed to emit: %w", err))
 		os.Exit(1)
@@ -71,51 +75,26 @@ func main() {
 	}
 }
 
-// resolveInputFiles は入力パターンから実際のファイルパスのリストを返す
-func resolveInputFiles(pattern string, exclude string) ([]string, error) {
+// scanTemplateFiles はディレクトリから.tmplファイルをスキャンする
+// dir/*.tmpl (フラット) と dir/*/*.tmpl (グループ) のみを対象とする
+func scanTemplateFiles(dir string) ([]string, error) {
 	var files []string
 
-	// カンマ区切りでパターンを分割
-	patterns := []string{pattern}
-	if strings.Contains(pattern, ",") {
-		patterns = strings.Split(pattern, ",")
+	// フラットなテンプレート: dir/*.tmpl
+	flatPattern := filepath.Join(dir, "*.tmpl")
+	flatFiles, err := filepath.Glob(flatPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan flat templates: %w", err)
 	}
+	files = append(files, flatFiles...)
 
-	// 各パターンをグロブ展開
-	for _, p := range patterns {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-
-		// グロブパターンとして展開を試みる
-		matches, err := filepath.Glob(p)
-		if err != nil {
-			return nil, err
-		}
-
-		// マッチした場合は展開結果を使用、マッチしない場合はそのまま使用
-		if len(matches) > 0 {
-			files = append(files, matches...)
-		} else {
-			files = append(files, p)
-		}
+	// グループ化されたテンプレート: dir/*/*.tmpl (1階層のみ)
+	groupPattern := filepath.Join(dir, "*", "*.tmpl")
+	groupFiles, err := filepath.Glob(groupPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan grouped templates: %w", err)
 	}
-
-	// 除外パターンの適用
-	if exclude != "" {
-		var filtered []string
-		for _, file := range files {
-			matched, err := filepath.Match(exclude, filepath.Base(file))
-			if err != nil {
-				return nil, err
-			}
-			if !matched {
-				filtered = append(filtered, file)
-			}
-		}
-		files = filtered
-	}
+	files = append(files, groupFiles...)
 
 	return files, nil
 }

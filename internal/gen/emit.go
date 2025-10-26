@@ -57,7 +57,7 @@ func (p *emitPrepared) allTemplates() []tmpl {
 }
 
 // prepare はテンプレートをスキャンし、型を解決して、コード生成に必要なデータを準備する
-func prepare(units []Unit) (*emitPrepared, error) {
+func prepare(units []Unit, basedir string) (*emitPrepared, error) {
 	if len(units) == 0 {
 		return nil, fmt.Errorf("no units provided")
 	}
@@ -74,7 +74,10 @@ func prepare(units []Unit) (*emitPrepared, error) {
 	// 各テンプレートを処理
 	for _, unit := range units {
 		// テンプレート名を抽出 (例: "mail_invite/title" または "footer")
-		templateName := extractTemplateName(unit.SourcePath)
+		templateName, err := extractTemplateName(unit.SourcePath, basedir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract template name from %s: %w", unit.SourcePath, err)
+		}
 
 		// グループ名を抽出 (スラッシュが含まれていればグループ)
 		var groupName string
@@ -170,9 +173,9 @@ func organizeGroups(templates []tmpl) ([]tmplGroup, []tmpl) {
 
 // Emit は複数のテンプレートから1つの統合Goファイルを生成する
 // 単一テンプレートの場合も同じフォーマットで生成される
-func Emit(units []Unit) (string, error) {
+func Emit(units []Unit, basedir string) (string, error) {
 	// Phase 1: データ収集と準備
-	prepared, err := prepare(units)
+	prepared, err := prepare(units, basedir)
 	if err != nil {
 		return "", err
 	}
@@ -406,39 +409,43 @@ func formatCode(code string) (string, error) {
 }
 
 // extractTemplateName はファイルパスからテンプレート名を抽出する
-// グループ対応: ディレクトリを含むパスを返す
-// 例: "templates/user_list.tmpl" -> "user_list" (フラット)
-// 例: "templates/mail_invite/title.tmpl" -> "mail_invite/title" (グループ)
-// 例: "email.tmpl" -> "email" (フラット)
-func extractTemplateName(path string) string {
+// basedir からの相対パスでグループ判定を行う
+// 例: basedir="templates", path="templates/footer.tmpl" -> "footer" (フラット)
+// 例: basedir="templates", path="templates/email/welcome.tmpl" -> "email/welcome" (グループ)
+func extractTemplateName(path string, basedir string) (string, error) {
+	// basedir からの相対パスを取得
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	absBasedir, err := filepath.Abs(basedir)
+	if err != nil {
+		return "", err
+	}
+
+	relPath, err := filepath.Rel(absBasedir, absPath)
+	if err != nil {
+		return "", fmt.Errorf("path %s is not under basedir %s", path, basedir)
+	}
+
 	// 拡張子を削除
-	pathWithoutExt := strings.TrimSuffix(path, filepath.Ext(path))
+	pathWithoutExt := strings.TrimSuffix(relPath, filepath.Ext(relPath))
 
 	// ディレクトリ区切りで分割
 	parts := strings.Split(filepath.ToSlash(pathWithoutExt), "/")
 
-	// 最後の2つのパーツを取得（ディレクトリ/ファイル名 または ファイル名のみ）
-	var relevantParts []string
-	if len(parts) >= 2 {
-		// templates/mail_invite/title.tmpl -> ["mail_invite", "title"]
-		relevantParts = parts[len(parts)-2:]
-
-		// 最後から2番目がtemplatesディレクトリの場合は、ファイル名のみ
-		if relevantParts[0] == "templates" {
-			relevantParts = parts[len(parts)-1:]
-		}
-	} else {
-		// ファイル名のみ
-		relevantParts = parts
+	// 各パーツから数字プレフィックスを削除してクリーンアップ
+	for i, part := range parts {
+		parts[i] = cleanName(part)
 	}
 
-	// 各パーツから数字プレフィックスを削除してクリーンアップ
-	for i, part := range relevantParts {
-		relevantParts[i] = cleanName(part)
+	// 階層チェック（フラット=1パーツ、グループ=2パーツ、それ以上はエラー）
+	if len(parts) > 2 {
+		return "", fmt.Errorf("template nesting too deep: %s (max 1 level of grouping)", relPath)
 	}
 
 	// パスとして結合
-	return strings.Join(relevantParts, "/")
+	return strings.Join(parts, "/"), nil
 }
 
 // cleanName は名前から数字プレフィックスを削除し、ハイフンをアンダースコアに変換する
