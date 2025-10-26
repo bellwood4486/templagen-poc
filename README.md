@@ -50,7 +50,7 @@ go get github.com/bellwood4486/tmpltype
 ```go
 package main
 
-//go:generate tmpltype -in templates/email.tmpl -pkg main -out template_gen.go
+//go:generate tmpltype -dir templates -pkg main -out template_gen.go
 ```
 
 3. コード生成を実行:
@@ -105,17 +105,15 @@ func main() {
 
 #### 複数テンプレート
 
-複数のテンプレートファイルを一度に処理:
+`-dir`オプションを指定すると、ディレクトリ内のすべての`.tmpl`ファイルが自動的に処理されます:
 
 ```go
-//go:generate tmpltype -in "templates/*.tmpl" -pkg main -out templates_gen.go
+//go:generate tmpltype -dir templates -pkg main -out templates_gen.go
 ```
 
-または明示的にファイルを指定:
-
-```go
-//go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
-```
+このコマンドは以下を自動的にスキャンします:
+- `templates/*.tmpl` (フラットなテンプレート)
+- `templates/*/*.tmpl` (グループ化されたテンプレート、1階層のみ)
 
 #### テンプレートのグループ化
 
@@ -311,18 +309,16 @@ type All_typesUser struct {
 ### コマンドラインオプション
 
 ```
-tmpltype -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
+tmpltype -dir <directory> -pkg <name> -out <file>
 
 オプション:
-  -in string
-        入力パターン（glob サポート、例: "*.tmpl" または "templates/*.tmpl"）
-        複数ファイルはカンマ区切りで指定可能
+  -dir string
+        テンプレートディレクトリ（必須）
+        dir/*.tmpl (フラット) と dir/*/*.tmpl (グループ、1階層) を自動スキャン
   -pkg string
-        出力パッケージ名
+        出力パッケージ名（必須）
   -out string
-        出力 .go ファイルパス
-  -exclude string
-        除外パターン（オプション、ファイルのベース名に適用）
+        出力 .go ファイルパス（必須）
 ```
 
 ### 動作原理
@@ -652,7 +648,7 @@ go get github.com/bellwood4486/tmpltype
 ```go
 package main
 
-//go:generate tmpltype -in templates/email.tmpl -pkg main -out template_gen.go
+//go:generate tmpltype -dir templates -pkg main -out template_gen.go
 ```
 
 3. Run code generation:
@@ -707,17 +703,15 @@ For complex types, use `@param` directives in your template `templates/user.tmpl
 
 #### Multiple Templates
 
-Process multiple template files at once:
+The `-dir` option automatically processes all `.tmpl` files in the directory:
 
 ```go
-//go:generate tmpltype -in "templates/*.tmpl" -pkg main -out templates_gen.go
+//go:generate tmpltype -dir templates -pkg main -out templates_gen.go
 ```
 
-Or specify files explicitly:
-
-```go
-//go:generate tmpltype -in "header.tmpl,footer.tmpl,nav.tmpl" -pkg main -out templates_gen.go
-```
+This command automatically scans:
+- `templates/*.tmpl` (flat templates)
+- `templates/*/*.tmpl` (grouped templates, 1 level only)
 
 #### Template Grouping
 
@@ -913,18 +907,16 @@ See [`examples/05_all_param_types`](./examples/05_all_param_types) for a compreh
 ### Command Line Options
 
 ```
-tmpltype -in <pattern> -pkg <name> -out <file> [-exclude <pattern>]
+tmpltype -dir <directory> -pkg <name> -out <file>
 
 Options:
-  -in string
-        Input pattern (glob supported, e.g., "*.tmpl" or "templates/*.tmpl")
-        Multiple files can be specified with comma separation
+  -dir string
+        Template directory (required)
+        Automatically scans dir/*.tmpl (flat) and dir/*/*.tmpl (grouped, 1 level)
   -pkg string
-        Output package name
+        Output package name (required)
   -out string
-        Output .go file path
-  -exclude string
-        Exclude pattern (optional, applied to file basenames)
+        Output .go file path (required)
 ```
 
 ### How It Works
